@@ -1,0 +1,8 @@
+node_modules/
+.cloudflare/
+.vite/
+dist/
+.dev.vars
+!.dev.vars.example
+.env*
+!.env.example

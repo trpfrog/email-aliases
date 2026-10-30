@@ -1,0 +1,30 @@
+{
+  "name": "email-aliases",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "cf dev",
+    "build": "cf build",
+    "deploy": "cf deploy",
+    "db:migrate:local": "cf d1 migrations apply 00000000-0000-4000-8000-000000000001 --local --persist-to .cloudflare/state --mode development",
+    "check": "vp check && tsc --noEmit",
+    "test": "vp test run"
+  },
+  "dependencies": {
+    "@cloudflare/workers-oauth-provider": "^1.2.4",
+    "@hono/mcp": "^0.3.5",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "hono": "^4.10.0",
+    "zod": "^4.3.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "2.0.0-beta.v.6",
+    "@cloudflare/workers-types": "^5.20261029.1",
+    "@types/node": "^24.0.0",
+    "cf": "1.0.0-beta.24",
+    "typescript": "^5.9.0",
+    "vite": "npm:@voidzero-dev/vite-plus-core@1.4.0",
+    "vite-plus": "^1.4.0"
+  },
+  "packageManager": "pnpm@10.28.2"
+}
