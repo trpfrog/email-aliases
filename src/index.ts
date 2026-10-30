@@ -1,27 +1,33 @@
 import { OAuthProvider } from "@cloudflare/workers-oauth-provider";
-import { receiveEmail } from "./aliases";
-import { auth, scopes } from "./auth";
-import { SCOPE, type Env } from "./env";
-import { mcp } from "./mcp";
+import { createAliasStore } from "./aliases/store";
+import { receiveEmail } from "./email/handler";
+import { auth } from "./auth/routes";
+import type { Env } from "./env";
+import { AUTHORIZE_PATH, MANAGE_SCOPE, MCP_PATH, OAUTH_SCOPES } from "./config";
+import { createMcpApp } from "./mcp/http";
 
 export default {
   fetch(request, env, ctx) {
     const provider = new OAuthProvider<Env>({
-      apiRoute: "/mcp",
-      apiHandler: mcp,
+      apiRoute: MCP_PATH,
+      apiHandler: createMcpApp(createAliasStore(env.DB), env.PUBLIC_ORIGIN),
       defaultHandler: auth,
-      authorizeEndpoint: "/authorize",
+      authorizeEndpoint: AUTHORIZE_PATH,
       tokenEndpoint: "/oauth/token",
       clientRegistrationEndpoint: "/oauth/register",
       clientIdMetadataDocumentEnabled: true,
-      scopesSupported: scopes,
-      requiredScopes: [SCOPE],
+      scopesSupported: OAUTH_SCOPES,
+      requiredScopes: [MANAGE_SCOPE],
       resourceMetadata: {
-        resource: `${env.PUBLIC_ORIGIN}/mcp`,
+        resource: `${env.PUBLIC_ORIGIN}${MCP_PATH}`,
         authorization_servers: [env.PUBLIC_ORIGIN],
       },
     });
+
     return provider.fetch(request, env, ctx);
   },
-  email: receiveEmail,
+
+  email(message, env) {
+    return receiveEmail(message, createAliasStore(env.DB), env.FORWARD_TO);
+  },
 } satisfies ExportedHandler<Env>;

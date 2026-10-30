@@ -1,6 +1,7 @@
 node_modules/
 .cloudflare/
 .vite/
+.reylo/
 dist/
 .dev.vars
 !.dev.vars.example

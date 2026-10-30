@@ -1,144 +1,173 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { URL } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
-import { addressSchema, receiveEmail } from "../src/aliases";
-import { createServer } from "../src/mcp";
+import { describe, expect, it as baseIt, vi } from "vite-plus/test";
+import { addressSchema } from "./schema";
+import { receiveEmail } from "../email/handler";
+import { createAliasStore } from "./store";
+import { createServer } from "../mcp/server";
 
-// Execute the production SQL against SQLite; only the D1 transport is adapted.
-function d1(sqlite: DatabaseSync): D1Database {
-  return {
-    prepare(sql: string) {
-      let values: (string | number)[] = [];
-      const statement = {
-        bind(...args: (string | number)[]) {
-          values = args;
-          return statement;
-        },
-        async first() {
-          return sqlite.prepare(sql).get(...values) ?? null;
-        },
-        async all() {
-          return { results: sqlite.prepare(sql).all(...values) };
-        },
-      };
-      return statement;
-    },
-  } as unknown as D1Database;
-}
+const it = baseIt
+  // eslint-disable-next-line no-empty-pattern -- Vitest がフィクスチャーの依存関係を検出するには分割代入が必要。
+  .extend("sqlite", async ({}, { onCleanup }) => {
+    const sqlite = new DatabaseSync(":memory:");
+    onCleanup(() => sqlite.close());
 
-describe("alias lifecycle", () => {
-  let sqlite: DatabaseSync;
-  let db: D1Database;
-  let client: Client;
-  let server: ReturnType<typeof createServer>;
-  const forward = vi.fn().mockResolvedValue(undefined);
-  const env = () => ({ DB: db, FORWARD_TO: "inbox@example.com" });
+    const migrations = new URL("../../migrations/", import.meta.url);
 
-  beforeEach(async () => {
-    sqlite = new DatabaseSync(":memory:");
-    sqlite.exec(readFileSync(new URL("../migrations/0001_aliases.sql", import.meta.url), "utf8"));
-    db = d1(sqlite);
-    server = createServer(db);
-    client = new Client({ name: "test", version: "1.0.0" });
+    for (const file of readdirSync(migrations)
+      .filter((file) => file.endsWith(".sql"))
+      .sort()) {
+      sqlite.exec(readFileSync(new URL(file, migrations), "utf8"));
+    }
+
+    return sqlite;
+  })
+  .extend("server", ({ sqlite }, { onCleanup }) => {
+    const server = createServer(createAliasStore(sqlite));
+    onCleanup(() => server.close());
+
+    return server;
+  })
+  .extend("client", async ({ server }, { onCleanup }) => {
+    const client = new Client({ name: "test", version: "1.0.0" });
+    onCleanup(() => client.close());
+
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
     await server.connect(serverTransport);
     await client.connect(clientTransport);
-    forward.mockClear();
-  });
 
-  afterEach(async () => {
-    await client.close();
-    await server.close();
-    sqlite.close();
-  });
+    return client;
+  })
+  .extend("forward", () =>
+    vi
+      .fn<Parameters<typeof receiveEmail>[0]["forward"]>()
+      .mockResolvedValue({ messageId: "test-message" }),
+  )
+  .extend(
+    "receive",
+    ({ sqlite }) =>
+      (message: Parameters<typeof receiveEmail>[0], forwardTo = "inbox@example.com") =>
+        receiveEmail(message, createAliasStore(sqlite), forwardTo),
+  );
 
-  it("drops unknown recipients, forwards a created alias, then drops it after deletion", async () => {
+describe("エイリアスの作成から削除まで", () => {
+  it("未登録の宛先は破棄し、登録後は転送し、削除後は再び破棄する", async ({
+    client,
+    forward,
+    receive,
+  }) => {
     const message = { to: "SHOP@mail.example.com", forward };
-    await receiveEmail(message, env());
+
+    await receive(message);
     expect(forward).not.toHaveBeenCalled();
+
     const created = await client.callTool({
       name: "create_alias",
       arguments: { address: "Shop", note: "Shopping" },
     });
+
     expect(created.structuredContent).toMatchObject({
       created: true,
       alias: { address: "shop@mail.example.com", note: "Shopping" },
     });
-    await receiveEmail(message, env());
+
+    await receive(message);
     expect(forward).toHaveBeenCalledExactlyOnceWith("inbox@example.com");
+
     const duplicate = await client.callTool({
       name: "create_alias",
       arguments: { address: message.to, note: "replacement" },
     });
+
     expect(duplicate.structuredContent).toMatchObject({
       created: false,
       alias: { note: "Shopping" },
     });
+
     const deleted = await client.callTool({ name: "delete_alias", arguments: { address: "shop" } });
+
     expect(deleted.structuredContent).toMatchObject({ deleted: true });
+
     forward.mockClear();
-    await receiveEmail(message, env());
+    await receive(message);
     expect(forward).not.toHaveBeenCalled();
+
     expect(
       (await client.callTool({ name: "delete_alias", arguments: { address: "shop" } }))
         .structuredContent,
     ).toMatchObject({ deleted: false });
   });
 
-  it("lists aliases with stable ordering and pagination", async () => {
-    for (const address of ["beta", "alpha", "gamma"])
+  it("エイリアスを一定の順序で一覧表示し、ページ分割できる", async ({ client }) => {
+    for (const address of ["beta", "alpha", "gamma"]) {
       await client.callTool({ name: "create_alias", arguments: { address } });
+    }
+
     const first = await client.callTool({ name: "list_aliases", arguments: { limit: 2 } });
+
     expect(first.structuredContent).toMatchObject({
       aliases: [{ address: "alpha@mail.example.com" }, { address: "beta@mail.example.com" }],
       next_offset: 2,
     });
+
     const last = await client.callTool({
       name: "list_aliases",
       arguments: { limit: 2, offset: 2 },
     });
+
     expect(last.structuredContent).toMatchObject({
       aliases: [{ address: "gamma@mail.example.com" }],
       next_offset: null,
     });
   });
 
-  it("matches the full address exactly, including plus tags", async () => {
+  it("プラスタグも含めて完全なアドレスで一致を判定する", async ({ client, forward, receive }) => {
     await client.callTool({ name: "create_alias", arguments: { address: "shop" } });
+
     for (const to of [
       "shop",
       "shop@other.example",
       "shop+tag@mail.example.com",
       "other@mail.example.com",
-    ])
-      await receiveEmail({ to, forward }, env());
+    ]) {
+      await receive({ to, forward });
+    }
+
     expect(forward).not.toHaveBeenCalled();
   });
 
-  it("does not swallow database or forwarding failures", async () => {
+  it("データベースや転送のエラーを呼び出し元に伝える", async ({
+    client,
+    sqlite,
+    forward,
+    receive,
+  }) => {
     await client.callTool({ name: "create_alias", arguments: { address: "shop" } });
+
     forward.mockRejectedValueOnce(new Error("forward unavailable"));
-    await expect(receiveEmail({ to: "shop@mail.example.com", forward }, env())).rejects.toThrow(
+    await expect(receive({ to: "shop@mail.example.com", forward })).rejects.toThrow(
       "forward unavailable",
     );
+
     sqlite.exec("DROP TABLE aliases");
-    await expect(receiveEmail({ to: "shop@mail.example.com", forward }, env())).rejects.toThrow();
+    await expect(receive({ to: "shop@mail.example.com", forward })).rejects.toThrow();
   });
 
-  it("prevents forwarding loops and fails on missing configuration", async () => {
+  it("転送ループを防ぎ、設定がない場合はエラーにする", async ({ client, forward, receive }) => {
     await client.callTool({ name: "create_alias", arguments: { address: "shop" } });
-    for (const FORWARD_TO of ["", "other@mail.example.com"])
-      await expect(
-        receiveEmail({ to: "shop@mail.example.com", forward }, { DB: db, FORWARD_TO }),
-      ).rejects.toThrow();
+
+    for (const FORWARD_TO of ["", "other@mail.example.com"]) {
+      await expect(receive({ to: "shop@mail.example.com", forward }, FORWARD_TO)).rejects.toThrow();
+    }
+
     expect(forward).not.toHaveBeenCalled();
   });
 });
 
-describe("address validation", () => {
+describe("アドレスの検証", () => {
   it.each([
     "",
     "*",
@@ -150,10 +179,11 @@ describe("address validation", () => {
     "a b",
     "あ",
     "x".repeat(65),
-  ])("rejects %j", (input) => {
+  ])("不正なアドレス %j を拒否する", (input) => {
     expect(addressSchema.safeParse(input).success).toBe(false);
   });
-  it("keeps supported punctuation and normalizes case", () => {
+
+  it("使用可能な記号を維持し、大文字を小文字に揃える", () => {
     expect(addressSchema.parse(" Shop+News ")).toBe("shop+news@mail.example.com");
   });
 });

@@ -10,10 +10,75 @@
 ChatGPT → OAuth → /mcp → D1 の作成・一覧・削除
 ```
 
-TypeScript / Hono / Vite+ / Cloudflare Workers / D1。
+TypeScript / Hono（`hono/jsx`）/ Vite+ / Reylo / Cloudflare Workers / D1。
 Worker は 1 つ、D1 は 1 テーブル。OAuth の保存先として KV を 1 つ使う。
 ユーザー登録・管理画面・メール本文の保存はない。接続承認ページのみ Hono で返す。
 開発・デプロイ・リソース操作には `cf` CLI を使う。
+
+## コードの構成
+
+```text
+src/
+├── index.ts              # Worker の入口と依存の組み立て
+├── index.test.mjs        # OAuth/MCP の結合テスト
+├── config.ts             # ドメイン・パス・権限の共通定義
+├── env.ts                # Worker bindings の型
+├── aliases/
+│   ├── schema.ts         # 入力検証と正規化
+│   ├── store.ts          # エイリアスの作成・一覧・削除・存在確認
+│   ├── store.test.ts     # SQLite と MCP を使った操作・受信判断のテスト
+│   ├── queries.test.ts   # SQL の実行時メタデータの検証
+│   ├── queries.test-d.ts # SQL の推論型の検証
+│   └── queries/*.sql     # Reylo が型推論する SQL
+├── email/handler.ts      # 登録済みなら転送、未登録なら drop
+├── mcp/
+│   ├── server.ts         # MCP ツール定義
+│   ├── http.ts           # HTTP transport・scope・Origin の検証
+│   └── http.test.ts
+└── auth/
+    ├── routes.ts         # Basic 認証と OAuth の承認処理
+    ├── consent.tsx       # hono/jsx の接続承認ページ
+    └── consent.test.ts   # JSX の表示・エスケープ
+```
+
+テストは実装の隣に置く。Worker 全体の OAuth/MCP 結合テストは `src/index.test.mjs` に置く。
+
+MCP とメール受信は同じ store を使い、SQL は `queries/` に集約する。
+store には DB クライアント、メール受信には存在確認だけを渡す。
+認証と通信処理を変更しても、エイリアス操作の実装に手を入れる必要はない。
+
+## SQL と型検査
+
+Reylo が `.sql` のパラメーター・行の型・結果件数を推論するため、DB の行の型は手書きしない。
+`pnpm db:prepare` は `migrations/*.sql` から型検査専用の `.reylo/schema.sqlite` を作り直す。
+アプリのデータを持つ D1 とは別の使い捨て DB で、SQL とテーブル定義の整合性を確認する。
+開発・ビルド・型検査・単体テストの各スクリプトから自動実行する。
+
+Reylo の content mapper を使うため **TypeScript 7.1 Beta** を固定している。
+VS Code では `TypeScriptTeam.native-preview` 拡張を入れ、ワークスペースの TypeScript と外部コードの実行を許可すると SQL の型を表示できる。
+`.reylo/` はキャッシュと使い捨て DB のため Git 管理しない。
+
+### VS Code で `.sql` の import が解決できない場合
+
+1. `pnpm install`、`pnpm typecheck` を実行する。型検査用の DB も準備される。
+2. 推奨拡張の **TypeScript 7**（`TypeScriptTeam.native-preview`）をインストール・有効化する。
+3. このリポジトリのルートを信頼済みワークスペースとして開く。
+4. `Developer: Reload Window` を実行し、ワークスペースの TypeScript の使用と content mapper の外部コード実行の確認が出たら許可する。通知を見逃した場合は通知センターも確認する。
+5. まだ解決しない場合は `TypeScript: Enable TypeScript 7` を実行し、出力パネルの **TypeScript 7** でワークスペースの TypeScript 7.1 が使われているか確認する。
+
+`.vscode/settings.json` はワークスペースの TypeScript と content mapper の有効化を指定し、`.vscode/extensions.json` に必要な拡張を推薦している。
+拡張内蔵の TypeScript 7.0 は content mapper に対応しないため、Reylo の SQL import にはワークスペースの 7.1 が必要。
+
+`SqliteClient` を `PostgresClient` に渡せないというエラーの場合は、Reylo の SQLite 解析エンジンが読み込めていない可能性がある。読み込み失敗時の代替の型が Postgres になるため、実際の原因は `.sql` ファイルの診断も確認する。
+特にエディターから起動する `node` が 20 系の場合、必須の `node:sqlite` がない。mise 向けに `.tool-versions` で Node 24.14.0 を指定しているので、`mise install` 後に VS Code を再起動する。シェルでの `node --version` だけでなく、VS Code 側の Node も 24 以上にする。
+
+VS Code が古い Node の PATH を引き継いでいる場合、`Reload Window` では直らない。作業を保存して **VS Code の全ウィンドウを完全終了（macOS は ⌘Q）**してから、リポジトリで次を実行する。
+
+```sh
+mise exec node@24.14.0 -- code .
+```
+
+VS Code が既に起動していると既存プロセスの環境が再利用されるため、全終了してから実行する。
 
 ## MCP ツール
 
@@ -48,9 +113,25 @@ D1 と KV は `.cloudflare/state` に保存される。ローカル操作は本�
 
 ```sh
 pnpm check       # フォーマット・Lint・TypeScript
-pnpm test        # MCP の実操作と SQLite を使った受信判定のテスト
+pnpm typecheck   # マイグレーションから DB を作り、SQL と TypeScript を型検査
+pnpm test        # MCP・SQLite・受信判断・JSX・HTTP のテスト
+pnpm test:integration # 一時ディレクトリで cf dev・D1・KV を起動して OAuth/MCP を検証
 pnpm build      # cf build（アップロードなし）
 ```
+
+### テストの書き方
+
+Vite+ 同梱の Vitest を使い、API は `vite-plus/test` から明示的に import する。
+`unit` と `integration` の test project を分け、通常の `pnpm test` では単体テスト、
+`pnpm test:integration` ではローカル Worker を起動する結合テストを実行する。
+
+- DB・MCP 接続・モックは `test.extend` の fixture でテストごとに作る。接続の解放は `onCleanup` に登録し、準備の途中で失敗しても後片付けする。
+- fixture を使うパラメーター化テストは、第二引数で test context を受け取れる `test.for` を使う。
+- 非同期の assertion は必ず `await` する。起動待ちは固定時間の sleep ではなく `vi.waitUntil` で状態を確認する。
+- SQL の型 assertion は `*.test-d.ts` に置く。`pnpm typecheck`（`pnpm check` にも含む）で Reylo の content mapper を有効にして検査する。`pnpm test` 単独では型を検査しない。
+- 実際の SQLite・MCP transport を使った既存の振る舞いの検証を保ち、HTTP adapter のテストでは store をモックする。
+
+参考: [Test Context](https://vitest.dev/guide/test-context)、[Testing Types](https://vitest.dev/guide/testing-types)、[Test Projects](https://vitest.dev/guide/projects)。
 
 ## 本番への配置
 
@@ -78,7 +159,7 @@ pnpm build      # cf build（アップロードなし）
 4. `.dev.vars` に長いランダムな `ADMIN_PASSWORD` と確認済み受信箱の `FORWARD_TO` を設定してデプロイする。このコマンドはファイル内の値を Worker Secrets にアップロードする。
 
    ```sh
-   pnpm exec cf deploy --secrets-file .dev.vars
+   pnpm run deploy --secrets-file .dev.vars
    ```
 
    `.dev.vars` は Git 管理対象外。`FORWARD_TO` は Cloudflare Email Routing の Destination Addresses で確認済みである必要がある。

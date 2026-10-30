@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => ({
     env: {
       DB: bindings.d1({
         name: "email-aliases",
-        // Local-only ID, shared with db:migrate:local. Set the real ID for production.
+        // db:migrate:local と共通のローカル専用 ID。本番環境には実際の ID を設定する。
         id: mode === "development" ? "00000000-0000-4000-8000-000000000001" : undefined,
       }),
       OAUTH_KV: bindings.kv({}),

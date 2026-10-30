@@ -8,6 +8,3 @@ export interface Env {
   FORWARD_TO: string;
   OAUTH_PROVIDER: OAuthHelpers;
 }
-
-export const DOMAIN = "mail.example.com";
-export const SCOPE = "aliases:manage";
