@@ -1,5 +1,5 @@
 import type { SubmitEvent } from "react";
-import { Alert, Button, Group, Modal, Stack, Textarea, TextInput } from "@mantine/core";
+import { Alert, Button, Group, Modal, Stack, Text, Textarea, TextInput } from "@mantine/core";
 import { DOMAIN } from "../../../config";
 
 export function CreateAliasDialog({
@@ -16,7 +16,8 @@ export function CreateAliasDialog({
   async function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    if (await onCreate(String(data.get("address")), String(data.get("note")))) onClose();
+    const address = `${String(data.get("address")).trim()}@${DOMAIN}`;
+    if (await onCreate(address, String(data.get("note")))) onClose();
   }
   return (
     <Modal
@@ -35,9 +36,17 @@ export function CreateAliasDialog({
           <TextInput
             label="アドレス"
             name="address"
-            placeholder={`shopping@${DOMAIN}`}
+            placeholder="shopping"
+            description="@ より前の部分を入力してください"
+            rightSection={
+              <Text size="sm" c="dimmed" pr="sm">
+                @{DOMAIN}
+              </Text>
+            }
+            rightSectionWidth={170}
+            rightSectionPointerEvents="none"
             required
-            maxLength={254}
+            maxLength={64}
             autoCapitalize="none"
             spellCheck={false}
             autoComplete="off"

@@ -99,7 +99,8 @@ VS Code が既に起動していると既存プロセスの環境が再利用さ
 | `list_aliases` | `limit?`, `offset?` | アドレス順に一覧。`next_offset` で次ページを取得 |
 | `delete_alias` | `address`           | 登録を削除。以後のメールを drop                  |
 
-`address` は `shopping` または `shopping@mail.example.com`。前後の空白を除去して小文字にする。
+`address` は `shopping@mail.example.com` のようなドメインを含む完全なアドレス。前後の空白を除去して小文字にする。
+Web UI では `@` より前だけを入力し、UI 側でドメインを付けて API に送信する。
 ASCII のドット区切りのローカルパート（最大 64 文字）のみ対応し、`*` は使えない。
 完全一致で判定するため、`shopping` の登録で `shopping+news` は許可されない。
 転送先は全アドレス共通で、Cloudflare で確認済みの受信箱を指定する。

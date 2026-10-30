@@ -166,7 +166,7 @@ test("React 管理画面と API の認証・検証・D1 操作", async () => {
   expect(page.headers.get("cache-control")).toContain("no-store");
 
   const headers = { Authorization: basic, Origin: base, "Content-Type": "application/json" };
-  const body = JSON.stringify({ address: "admin-test", note: "管理画面テスト" });
+  const body = JSON.stringify({ address: "admin-test@mail.example.com", note: "管理画面テスト" });
   expect(
     (
       await request("/api/aliases", {
@@ -181,6 +181,17 @@ test("React 管理画面と API の認証・検証・D1 操作", async () => {
       .status,
   ).toBe(403);
   expect((await request("/api/aliases", { method: "POST", headers, body: "{" })).status).toBe(400);
+  for (const method of ["POST", "DELETE"]) {
+    expect(
+      (
+        await request("/api/aliases", {
+          method,
+          headers,
+          body: JSON.stringify({ address: "admin-test" }),
+        })
+      ).status,
+    ).toBe(400);
+  }
   expect(
     (await request("/api/aliases?offset=-1", { headers: { Authorization: basic } })).status,
   ).toBe(400);
@@ -319,7 +330,7 @@ test("実際のローカル D1/KV で OAuth の接続承認・PKCE・MCP・ト�
     (
       await rpc("tools/call", {
         name: "create_alias",
-        arguments: { address: "test-alias", note: "test" },
+        arguments: { address: "test-alias@mail.example.com", note: "test" },
       })
     ).structuredContent.created,
   ).toBe(true);
@@ -331,8 +342,12 @@ test("実際のローカル D1/KV で OAuth の接続承認・PKCE・MCP・ト�
   );
 
   expect(
-    (await rpc("tools/call", { name: "delete_alias", arguments: { address: "test-alias" } }))
-      .structuredContent.deleted,
+    (
+      await rpc("tools/call", {
+        name: "delete_alias",
+        arguments: { address: "test-alias@mail.example.com" },
+      })
+    ).structuredContent.deleted,
   ).toBe(true);
 
   const refreshResponse = await request("/oauth/token", {

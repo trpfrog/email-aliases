@@ -1,12 +1,11 @@
 import { z } from "zod";
 import { DOMAIN } from "../config";
 
-// ローカル部のみ、または完全なアドレスを受け付け、大文字・小文字を区別せず扱う。
+// ドメインを含む完全なアドレスを受け付け、大文字・小文字を区別せず扱う。
 export const addressSchema = z
   .string()
   .trim()
   .toLowerCase()
-  .transform((input) => (input.includes("@") ? input : `${input}@${DOMAIN}`))
   .refine((address) => {
     const [local, domain, extra] = address.split("@");
 

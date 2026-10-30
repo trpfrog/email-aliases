@@ -67,7 +67,7 @@ describe("エイリアスの作成から削除まで", () => {
 
     const created = await client.callTool({
       name: "create_alias",
-      arguments: { address: "Shop", note: "Shopping" },
+      arguments: { address: "Shop@mail.example.com", note: "Shopping" },
     });
 
     expect(created.structuredContent).toMatchObject({
@@ -88,7 +88,10 @@ describe("エイリアスの作成から削除まで", () => {
       alias: { note: "Shopping" },
     });
 
-    const deleted = await client.callTool({ name: "delete_alias", arguments: { address: "shop" } });
+    const deleted = await client.callTool({
+      name: "delete_alias",
+      arguments: { address: "shop@mail.example.com" },
+    });
 
     expect(deleted.structuredContent).toMatchObject({ deleted: true });
 
@@ -97,14 +100,21 @@ describe("エイリアスの作成から削除まで", () => {
     expect(forward).not.toHaveBeenCalled();
 
     expect(
-      (await client.callTool({ name: "delete_alias", arguments: { address: "shop" } }))
-        .structuredContent,
+      (
+        await client.callTool({
+          name: "delete_alias",
+          arguments: { address: "shop@mail.example.com" },
+        })
+      ).structuredContent,
     ).toMatchObject({ deleted: false });
   });
 
   it("エイリアスを一定の順序で一覧表示し、ページ分割できる", async ({ client }) => {
     for (const address of ["beta", "alpha", "gamma"]) {
-      await client.callTool({ name: "create_alias", arguments: { address } });
+      await client.callTool({
+        name: "create_alias",
+        arguments: { address: `${address}@mail.example.com` },
+      });
     }
 
     const first = await client.callTool({ name: "list_aliases", arguments: { limit: 2 } });
@@ -126,7 +136,10 @@ describe("エイリアスの作成から削除まで", () => {
   });
 
   it("プラスタグも含めて完全なアドレスで一致を判定する", async ({ client, forward, receive }) => {
-    await client.callTool({ name: "create_alias", arguments: { address: "shop" } });
+    await client.callTool({
+      name: "create_alias",
+      arguments: { address: "shop@mail.example.com" },
+    });
 
     for (const to of [
       "shop",
@@ -146,7 +159,10 @@ describe("エイリアスの作成から削除まで", () => {
     forward,
     receive,
   }) => {
-    await client.callTool({ name: "create_alias", arguments: { address: "shop" } });
+    await client.callTool({
+      name: "create_alias",
+      arguments: { address: "shop@mail.example.com" },
+    });
 
     forward.mockRejectedValueOnce(new Error("forward unavailable"));
     await expect(receive({ to: "shop@mail.example.com", forward })).rejects.toThrow(
@@ -158,7 +174,10 @@ describe("エイリアスの作成から削除まで", () => {
   });
 
   it("転送ループを防ぎ、設定がない場合はエラーにする", async ({ client, forward, receive }) => {
-    await client.callTool({ name: "create_alias", arguments: { address: "shop" } });
+    await client.callTool({
+      name: "create_alias",
+      arguments: { address: "shop@mail.example.com" },
+    });
 
     for (const FORWARD_TO of ["", "other@mail.example.com"]) {
       await expect(receive({ to: "shop@mail.example.com", forward }, FORWARD_TO)).rejects.toThrow();
@@ -172,7 +191,7 @@ describe("アドレスの検証", () => {
   it("検証済みのアドレスだけをストアに渡せる", () => {
     type Store = ReturnType<typeof createAliasStore>;
 
-    expectTypeOf(addressSchema.parse("shop")).toEqualTypeOf<AliasAddress>();
+    expectTypeOf(addressSchema.parse("shop@mail.example.com")).toEqualTypeOf<AliasAddress>();
     expectTypeOf<string>().not.toExtend<AliasAddress>();
     expectTypeOf<Parameters<Store["has"]>[0]>().toEqualTypeOf<AliasAddress>();
     expectTypeOf<Parameters<Store["delete"]>[0]>().toEqualTypeOf<AliasAddress>();
@@ -181,20 +200,21 @@ describe("アドレスの検証", () => {
 
   it.each([
     "",
+    "shop",
     "*",
-    "a..b",
-    ".a",
-    "a.",
+    "a..b@mail.example.com",
+    ".a@mail.example.com",
+    "a.@mail.example.com",
     "a@other.example",
     "a@@mail.example.com",
-    "a b",
-    "あ",
-    "x".repeat(65),
+    "a b@mail.example.com",
+    "あ@mail.example.com",
+    `${"x".repeat(65)}@mail.example.com`,
   ])("不正なアドレス %j を拒否する", (input) => {
     expect(addressSchema.safeParse(input).success).toBe(false);
   });
 
   it("使用可能な記号を維持し、大文字を小文字に揃える", () => {
-    expect(addressSchema.parse(" Shop+News ")).toBe("shop+news@mail.example.com");
+    expect(addressSchema.parse(" Shop+News@MAIL.TRPFROG.NET ")).toBe("shop+news@mail.example.com");
   });
 });

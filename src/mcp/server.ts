@@ -16,7 +16,7 @@ export function createServer(aliases: AliasStore) {
   server.registerTool(
     "create_alias",
     {
-      description: `Allow an address at ${DOMAIN} to receive forwarded email. Accepts a local part or full address. Creating an existing alias leaves its note unchanged.`,
+      description: `Allow an address at ${DOMAIN} to receive forwarded email. Requires a full address including the domain. Creating an existing alias leaves its note unchanged.`,
       inputSchema: createAliasSchema.shape,
       annotations: {
         readOnlyHint: false,
