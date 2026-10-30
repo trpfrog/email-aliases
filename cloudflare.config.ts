@@ -6,7 +6,9 @@ export default defineConfig(({ mode }) => ({
     entrypoint: "./src/index.ts",
     compatibilityDate: "2026-10-27",
     compatibilityFlags: ["nodejs_compat", "global_fetch_strictly_public"],
+    assets: { runWorkerFirst: ["/", "/index.html", "/api/*"] },
     env: {
+      ASSETS: bindings.assets(),
       DB: bindings.d1({
         name: "email-aliases",
         // db:migrate:local と共通のローカル専用 ID。本番環境には実際の ID を設定する。

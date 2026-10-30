@@ -28,6 +28,7 @@ beforeAll(async () => {
     "tsconfig.json",
     "cloudflare.config.ts",
     "vite.config.ts",
+    "index.html",
     ".reylo.yaml",
     "scripts",
     "src",
@@ -154,6 +155,47 @@ test("Basic 認証と OAuth の検出情報で MCP と接続承認のエンド�
 
   const discovery = await (await request("/.well-known/oauth-authorization-server")).json();
   expect(discovery.code_challenge_methods_supported).toContain("S256");
+});
+
+test("React 管理画面と API の認証・検証・D1 操作", async () => {
+  expect((await request("/")).status).toBe(401);
+  expect((await request("/api/aliases")).status).toBe(401);
+  const page = await request("/", { headers: { Authorization: basic } });
+  expect(page.status).toBe(200);
+  expect(await page.text()).toContain("/src/web/main.tsx");
+  expect(page.headers.get("cache-control")).toContain("no-store");
+
+  const headers = { Authorization: basic, Origin: base, "Content-Type": "application/json" };
+  const body = JSON.stringify({ address: "admin-test", note: "管理画面テスト" });
+  expect(
+    (
+      await request("/api/aliases", {
+        method: "POST",
+        headers: { ...headers, Origin: "https://other.example" },
+        body,
+      })
+    ).status,
+  ).toBe(403);
+  expect(
+    (await request("/api/aliases", { method: "POST", headers: { Authorization: basic }, body }))
+      .status,
+  ).toBe(403);
+  expect((await request("/api/aliases", { method: "POST", headers, body: "{" })).status).toBe(400);
+  expect(
+    (await request("/api/aliases?offset=-1", { headers: { Authorization: basic } })).status,
+  ).toBe(400);
+
+  const created = await request("/api/aliases", { method: "POST", headers, body });
+  expect(created.status).toBe(201);
+  expect((await created.json()).alias.address).toBe("admin-test@mail.example.com");
+  expect((await request("/api/aliases", { method: "POST", headers, body })).status).toBe(200);
+  const list = await request("/api/aliases", { headers: { Authorization: basic } });
+  expect((await list.json()).aliases).toContainEqual(
+    expect.objectContaining({ address: "admin-test@mail.example.com", note: "管理画面テスト" }),
+  );
+  expect(
+    (await (await request("/api/aliases", { method: "DELETE", headers, body })).json()).deleted,
+  ).toBe(true);
 });
 
 test("実際のローカル D1/KV で OAuth の接続承認・PKCE・MCP・トークン更新が動作する", async () => {

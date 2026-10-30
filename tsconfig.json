@@ -14,5 +14,5 @@
   },
   "contentMappers": [{ "package": "reylo", "extensions": [".sql", ".reylo.yaml", ".reylo.yml"] }],
   "include": ["src", "*.ts"],
-  "exclude": ["migrations", "node_modules", ".cloudflare", ".reylo"]
+  "exclude": ["src/web", "migrations", "node_modules", ".cloudflare", ".reylo"]
 }

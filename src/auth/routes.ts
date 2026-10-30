@@ -5,8 +5,10 @@ import { HTTPException } from "hono/http-exception";
 import type { Env } from "../env";
 import { AUTHORIZE_PATH } from "../config";
 import { ConsentPage } from "./consent";
+import { admin } from "../admin/routes";
 
 export const auth = new Hono<{ Bindings: Env }>();
+auth.route("/", admin);
 
 auth.use(AUTHORIZE_PATH, async (c, next) => {
   if (!c.env.ADMIN_PASSWORD) {

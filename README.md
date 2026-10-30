@@ -10,9 +10,10 @@
 ChatGPT → OAuth → /mcp → D1 の作成・一覧・削除
 ```
 
-TypeScript / Hono（`hono/jsx`）/ Vite+ / Reylo / Cloudflare Workers / D1。
+TypeScript / React / Mantine / Hono（`hono/jsx`）/ Vite+ / SWC / React Compiler / Reylo / Cloudflare Workers / D1。
 Worker は 1 つ、D1 は 1 テーブル。OAuth の保存先として KV を 1 つ使う。
-ユーザー登録・管理画面・メール本文の保存はない。接続承認ページのみ Hono で返す。
+`/` に React SPA の管理画面があり、一覧・検索・追加・削除に対応する。
+ユーザー登録・メール本文の保存はない。接続承認ページは Hono で返す。
 開発・デプロイ・リソース操作には `cf` CLI を使う。
 
 ## コードの構成
@@ -29,6 +30,18 @@ src/
 │   ├── store.test.ts     # SQLite と MCP を使った操作・受信判断のテスト
 │   └── queries/*.sql     # Reylo が型推論する SQL
 ├── email/handler.ts      # 登録済みなら転送、未登録なら drop
+├── admin/routes.ts       # 管理画面と JSON API の Basic 認証・Origin 検証
+├── web/
+│   ├── main.tsx          # React の起動
+│   ├── app.tsx           # 画面の組み立て
+│   ├── theme.ts          # Mantine の緑テーマ・標準フォント
+│   ├── api/              # 型付き API クライアント
+│   ├── hooks/            # 一覧取得と追加・削除の状態管理
+│   ├── components/
+│   │   ├── aliases/      # 見出し・検索欄・テーブル・行・空状態・ダイアログ
+│   │   ├── layout/       # 共通ヘッダー・フッター
+│   │   └── feedback/     # 操作結果の通知
+│   └── tsconfig.json     # DOM・React 用の型検査設定
 ├── mcp/
 │   ├── server.ts         # MCP ツール定義
 │   ├── http.ts           # HTTP transport・scope・Origin の検証
@@ -106,6 +119,12 @@ pnpm dev
 ```
 
 開発 URL は `http://localhost:5173`。`/health` で起動を確認できる。
+`/` を開き、Basic 認証の `admin` と `ADMIN_PASSWORD` で管理画面にログインする。
+検索はアドレス・メモが対象。管理 API は `/api/aliases` で、MCP と同じ store を使う。
+追加・削除は `PUBLIC_ORIGIN` と同じ Origin の JSON リクエストに限定する。
+React 側の変換は SWC、最適化は SWC 内蔵の React Compiler を使う。
+UI は Mantine のコンポーネントと style props、`theme.ts` で構成し、独自 CSS・外部フォントは使わない。
+Hono の JSX と Worker・テストの変換は Vite 標準のまま維持する。
 D1 と KV は `.cloudflare/state` に保存される。ローカル操作は本番のデータを変更しない。
 `cf` と Cloudflare Vite plugin は Beta 版を固定している。Vite+ の Vite を plugin と共有する。
 
@@ -175,7 +194,7 @@ ChatGPT の開発者向け MCP 接続で、デプロイした `https://<worker-o
 ログインが開いたら Basic 認証のユーザー名 `admin` と `ADMIN_PASSWORD` を入力し、接続承認ページで許可する。
 接続後は「shopping 用のアドレスを作って」「アドレスを一覧にして」「shopping を削除して」などで操作できる。
 
-MCP の認証は OAuth 2.1（PKCE）で、Basic 認証はブラウザーで開く接続承認ページにだけ使う。
+MCP の認証は OAuth 2.1（PKCE）で、Basic 認証は管理画面・管理 API・接続承認ページに使う。
 承認処理にはライブラリのブラウザーに紐づくワンタイムハンドルを使う。
 パスワード変更は発行済み OAuth トークンを失効させない。すべての接続を失効させる場合は OAuth 用 KV を新規作成して binding を切り替え、再接続する。
 
