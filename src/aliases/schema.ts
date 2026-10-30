@@ -16,7 +16,10 @@ export const addressSchema = z
       local.length <= 64 &&
       /^[a-z0-9!#$%&'+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'+/=?^_`{|}~-]+)*$/.test(local)
     );
-  }, `Use an address at ${DOMAIN} (local part: 1–64 ASCII characters).`);
+  }, `Use an address at ${DOMAIN} (local part: 1–64 ASCII characters).`)
+  .brand<"AliasAddress">();
+
+export type AliasAddress = z.output<typeof addressSchema>;
 
 export const createAliasSchema = z.object({
   address: addressSchema,

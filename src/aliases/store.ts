@@ -1,6 +1,6 @@
 import type { SqliteClient } from "reylo";
 import type { z } from "zod";
-import type { createAliasSchema, listAliasesSchema } from "./schema";
+import type { AliasAddress, createAliasSchema, listAliasesSchema } from "./schema";
 import createAlias from "./queries/create.sql";
 import deleteAlias from "./queries/delete.sql";
 import getAlias from "./queries/get.sql";
@@ -9,7 +9,7 @@ import listAliases from "./queries/list.sql";
 // Reylo がマイグレーション適用後のスキーマからクエリの引数と結果の型を推論する。
 export function createAliasStore(db: SqliteClient) {
   return {
-    async has(address: string): Promise<boolean> {
+    async has(address: AliasAddress): Promise<boolean> {
       return (await getAlias.run(db, { address })) !== null;
     },
 
@@ -31,7 +31,7 @@ export function createAliasStore(db: SqliteClient) {
       };
     },
 
-    async delete(address: string) {
+    async delete(address: AliasAddress) {
       const row = await deleteAlias.run(db, { address });
 
       return { address, deleted: row !== null };

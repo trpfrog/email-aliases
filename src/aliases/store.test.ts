@@ -3,7 +3,8 @@ import { DatabaseSync } from "node:sqlite";
 import { URL } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { describe, expect, it as baseIt, vi } from "vite-plus/test";
+import { describe, expect, expectTypeOf, it as baseIt, vi } from "vite-plus/test";
+import type { AliasAddress } from "./schema";
 import { addressSchema } from "./schema";
 import { receiveEmail } from "../email/handler";
 import { createAliasStore } from "./store";
@@ -168,6 +169,16 @@ describe("エイリアスの作成から削除まで", () => {
 });
 
 describe("アドレスの検証", () => {
+  it("検証済みのアドレスだけをストアに渡せる", () => {
+    type Store = ReturnType<typeof createAliasStore>;
+
+    expectTypeOf(addressSchema.parse("shop")).toEqualTypeOf<AliasAddress>();
+    expectTypeOf<string>().not.toExtend<AliasAddress>();
+    expectTypeOf<Parameters<Store["has"]>[0]>().toEqualTypeOf<AliasAddress>();
+    expectTypeOf<Parameters<Store["delete"]>[0]>().toEqualTypeOf<AliasAddress>();
+    expectTypeOf<Parameters<Store["create"]>[0]["address"]>().toEqualTypeOf<AliasAddress>();
+  });
+
   it.each([
     "",
     "*",
