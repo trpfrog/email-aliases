@@ -27,8 +27,6 @@ src/
 │   ├── schema.ts         # 入力検証と正規化
 │   ├── store.ts          # エイリアスの作成・一覧・削除・存在確認
 │   ├── store.test.ts     # SQLite と MCP を使った操作・受信判断のテスト
-│   ├── queries.test.ts   # SQL の実行時メタデータの検証
-│   ├── queries.test-d.ts # SQL の推論型の検証
 │   └── queries/*.sql     # Reylo が型推論する SQL
 ├── email/handler.ts      # 登録済みなら転送、未登録なら drop
 ├── mcp/
