@@ -2,17 +2,6 @@
   "name": "email-aliases",
   "private": true,
   "type": "module",
-  "scripts": {
-    "dev": "pnpm db:prepare && cf dev",
-    "build": "pnpm db:prepare && cf build",
-    "deploy": "pnpm db:prepare && cf deploy",
-    "db:prepare": "node scripts/prepare-db.mjs",
-    "db:migrate:local": "cf d1 migrations apply 00000000-0000-4000-8000-000000000001 --local --persist-to .cloudflare/state --mode development",
-    "check": "vp check && pnpm typecheck",
-    "typecheck": "pnpm db:prepare && tsc --noEmit --runExternalCode && tsc -p src/web --noEmit --runExternalCode",
-    "test": "pnpm db:prepare && vp test run --project unit",
-    "test:integration": "vp test run --project integration"
-  },
   "dependencies": {
     "@cloudflare/workers-oauth-provider": "^1.2.4",
     "@hono/mcp": "^0.3.5",

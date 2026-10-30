@@ -14,6 +14,7 @@ TypeScript / React / Mantine / Hono（`hono/jsx`）/ Vite+ / SWC / React Compile
 Worker は 1 つ、D1 は 1 テーブル。OAuth の保存先として KV を 1 つ使う。
 `/` に React SPA の管理画面があり、一覧・検索・追加・メモとサービス URL の編集・無効化・有効化・削除に対応する。
 ユーザー登録・メール本文の保存はない。接続承認ページは Hono で返す。
+タスクは `vite.config.ts` の `run.tasks` に定義し、`vp run <タスク名>` で実行する。
 開発・デプロイ・リソース操作には `cf` CLI を使う。
 
 ## コードの構成
@@ -61,7 +62,7 @@ store には DB クライアント、メール受信には存在確認だけを�
 ## SQL と型検査
 
 Reylo が `.sql` のパラメーター・行の型・結果件数を推論するため、DB の行の型は手書きしない。
-`pnpm db:prepare` は `migrations/*.sql` から型検査専用の `.reylo/schema.sqlite` を作り直す。
+`vp run db:prepare` は `migrations/*.sql` から型検査専用の `.reylo/schema.sqlite` を作り直す。
 アプリのデータを持つ D1 とは別の使い捨て DB で、SQL とテーブル定義の整合性を確認する。
 開発・ビルド・型検査・単体テストの各スクリプトから自動実行する。
 
@@ -71,7 +72,7 @@ VS Code では `TypeScriptTeam.native-preview` 拡張を入れ、ワークスペ
 
 ### VS Code で `.sql` の import が解決できない場合
 
-1. `pnpm install`、`pnpm typecheck` を実行する。型検査用の DB も準備される。
+1. `pnpm install`、`vp run typecheck` を実行する。型検査用の DB も準備される。
 2. 推奨拡張の **TypeScript 7**（`TypeScriptTeam.native-preview`）をインストール・有効化する。
 3. このリポジトリのルートを信頼済みワークスペースとして開く。
 4. `Developer: Reload Window` を実行し、ワークスペースの TypeScript の使用と content mapper の外部コード実行の確認が出たら許可する。通知を見逃した場合は通知センターも確認する。
@@ -117,14 +118,14 @@ DB の参照失敗や転送エラーは握りつぶさず、Worker の失敗と�
 
 ## ローカル開発
 
-Node.js 24 以降と pnpm 10 を用意する。
+Node.js 24 以降と pnpm 10 を用意する。`vp` を PATH に入れていない場合は `pnpm exec vp run <タスク名>` でも実行できる。
 
 ```sh
 pnpm install
 cp .dev.vars.example .dev.vars
 # .dev.vars の ADMIN_PASSWORD と FORWARD_TO を設定する
-pnpm db:migrate:local
-pnpm dev
+vp run db:migrate:local
+vp run dev
 ```
 
 開発 URL は `http://localhost:5173`。`/health` で起動を確認できる。
@@ -142,23 +143,27 @@ D1 と KV は `.cloudflare/state` に保存される。ローカル操作は本�
 `cf` と Cloudflare Vite plugin は Beta 版を固定している。Vite+ の Vite を plugin と共有する。
 
 ```sh
-pnpm check       # フォーマット・Lint・TypeScript
-pnpm typecheck   # マイグレーションから DB を作り、SQL と TypeScript を型検査
-pnpm test        # MCP・SQLite・受信判断・JSX・HTTP のテスト
-pnpm test:integration # 一時ディレクトリで cf dev・D1・KV を起動して OAuth/MCP を検証
-pnpm build      # cf build（アップロードなし）
+vp run check       # フォーマット・Lint・TypeScript
+vp run typecheck   # マイグレーションから DB を作り、SQL と TypeScript を型検査
+vp run test        # MCP・SQLite・受信判断・JSX・HTTP のテスト
+vp run test:integration # 一時ディレクトリで cf dev・D1・KV を起動して OAuth/MCP を検証
+vp run build      # cf build（アップロードなし）
 ```
+
+`db:prepare` はマイグレーションと準備スクリプトを入力に、型検査用 DB を出力にキャッシュする。
+`dev`・`deploy`・`db:migrate:local`・`test:integration` はキャッシュせず毎回実行する。
+`vp check` / `vp test` / `vp build` は Vite+ の組み込みコマンドなので、プロジェクトのタスクは `vp run` 経由で実行する。
 
 ### テストの書き方
 
 Vite+ 同梱の Vitest を使い、API は `vite-plus/test` から明示的に import する。
-`unit` と `integration` の test project を分け、通常の `pnpm test` では単体テスト、
-`pnpm test:integration` ではローカル Worker を起動する結合テストを実行する。
+`unit` と `integration` の test project を分け、通常の `vp run test` では単体テスト、
+`vp run test:integration` ではローカル Worker を起動する結合テストを実行する。
 
 - DB・MCP 接続・モックは `test.extend` の fixture でテストごとに作る。接続の解放は `onCleanup` に登録し、準備の途中で失敗しても後片付けする。
 - fixture を使うパラメーター化テストは、第二引数で test context を受け取れる `test.for` を使う。
 - 非同期の assertion は必ず `await` する。起動待ちは固定時間の sleep ではなく `vi.waitUntil` で状態を確認する。
-- SQL の型 assertion は `*.test-d.ts` に置く。`pnpm typecheck`（`pnpm check` にも含む）で Reylo の content mapper を有効にして検査する。`pnpm test` 単独では型を検査しない。
+- SQL の型 assertion は `*.test-d.ts` に置く。`vp run typecheck`（`vp run check` にも含む）で Reylo の content mapper を有効にして検査する。`vp run test` 単独では型を検査しない。
 - 実際の SQLite・MCP transport を使った既存の振る舞いの検証を保ち、HTTP adapter のテストでは store をモックする。
 
 参考: [Test Context](https://vitest.dev/guide/test-context)、[Testing Types](https://vitest.dev/guide/testing-types)、[Test Projects](https://vitest.dev/guide/projects)。
@@ -192,7 +197,7 @@ Vite+ 同梱の Vitest を使い、API は `vite-plus/test` から明示的に i
 4. `.dev.vars` に長いランダムな `ADMIN_PASSWORD` と確認済み受信箱の `FORWARD_TO` を設定してデプロイする。このコマンドはファイル内の値を Worker Secrets にアップロードする。
 
    ```sh
-   pnpm run deploy --secrets-file .dev.vars
+   vp run deploy --secrets-file .dev.vars
    ```
 
    `.dev.vars` は Git 管理対象外。`FORWARD_TO` は Cloudflare Email Routing の Destination Addresses で確認済みである必要がある。

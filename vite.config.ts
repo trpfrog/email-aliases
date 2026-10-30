@@ -4,6 +4,36 @@ import reylo from "reylo/vite";
 import react from "@vitejs/plugin-react-swc";
 
 export default defineConfig({
+  run: {
+    tasks: {
+      dev: { command: "cf dev", dependsOn: ["db:prepare"], cache: false },
+      build: {
+        command: "cf build",
+        dependsOn: ["db:prepare"],
+        cache: { output: [".cloudflare/output/**"] },
+      },
+      deploy: { command: "cf deploy", dependsOn: ["db:prepare"], cache: false },
+      "db:prepare": {
+        command: "node scripts/prepare-db.mjs",
+        cache: {
+          input: ["scripts/prepare-db.mjs", "migrations/*.sql"],
+          output: [".reylo/schema.sqlite"],
+        },
+      },
+      "db:migrate:local": {
+        command:
+          "cf d1 migrations apply 00000000-0000-4000-8000-000000000001 --local --persist-to .cloudflare/state --mode development",
+        cache: false,
+      },
+      check: { command: "vp check", dependsOn: ["typecheck"] },
+      typecheck: {
+        command: ["tsc --noEmit --runExternalCode", "tsc -p src/web --noEmit --runExternalCode"],
+        dependsOn: ["db:prepare"],
+      },
+      test: { command: "vp test run --project unit", dependsOn: ["db:prepare"] },
+      "test:integration": { command: "vp test run --project integration", cache: false },
+    },
+  },
   plugins: [
     reylo(),
     react({
