@@ -1,4 +1,6 @@
+import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
+import { z } from "zod";
 import { basicAuth } from "hono/basic-auth";
 import { HTTPException } from "hono/http-exception";
 import { createAliasStore } from "../aliases/store";
@@ -10,9 +12,9 @@ import {
 } from "../aliases/schema";
 import type { Env } from "../env";
 
-export const admin = new Hono<{ Bindings: Env }>();
+const app = new Hono<{ Bindings: Env }>();
 
-admin.use("*", async (c, next) => {
+app.use("*", async (c, next) => {
   if (!["/", "/index.html"].includes(c.req.path) && !c.req.path.startsWith("/api/")) {
     return next();
   }
@@ -23,10 +25,10 @@ admin.use("*", async (c, next) => {
   c.header("X-Frame-Options", "DENY");
 });
 
-admin.get("/", (c) => c.env.ASSETS.fetch(c.req.raw));
-admin.get("/index.html", (c) => c.redirect("/"));
+app.get("/", (c) => c.env.ASSETS.fetch(c.req.raw));
+app.get("/index.html", (c) => c.redirect("/"));
 
-admin.use("/api/*", async (c, next) => {
+app.use("/api/*", async (c, next) => {
   if (c.req.method !== "GET") {
     if (c.req.header("Origin") !== c.env.PUBLIC_ORIGIN) {
       return c.json({ error: "Invalid origin" }, 403);
@@ -38,45 +40,59 @@ admin.use("/api/*", async (c, next) => {
   await next();
 });
 
-admin.get("/api/aliases", async (c) => {
-  const input = listAliasesSchema.safeParse({
-    limit: c.req.query("limit") === undefined ? undefined : Number(c.req.query("limit")),
-    offset: c.req.query("offset") === undefined ? undefined : Number(c.req.query("offset")),
-  });
-  if (!input.success) return c.json({ error: "Invalid pagination" }, 400);
-  return c.json(await createAliasStore(c.env.DB).list(input.data));
+const listAliasesQuerySchema = z.object({
+  limit: z.string().transform(Number).optional().pipe(listAliasesSchema.shape.limit),
+  offset: z.string().transform(Number).optional().pipe(listAliasesSchema.shape.offset),
 });
 
-admin.on(["POST", "PATCH", "DELETE"], "/api/aliases", async (c) => {
-  const body = await c.req.json().catch(() => null);
-  const store = createAliasStore(c.env.DB);
-  if (c.req.method === "PATCH") {
-    const input = updateAliasSchema.safeParse(body);
-    if (!input.success)
-      return c.json(
-        { error: "アドレス・メモ・サービス URL・有効状態の指定を確認してください。" },
-        400,
-      );
-    const result =
-      "disabled" in input.data
-        ? await store.setDisabled(input.data)
-        : await store.updateDetails(input.data);
-    if (!result.updated) return c.json({ error: "エイリアスが見つかりません。" }, 404);
-    return c.json(result);
-  }
-  if (c.req.method === "POST") {
-    const input = createAliasSchema.safeParse(body);
-    if (!input.success)
-      return c.json({ error: "アドレス・メモ・サービス URL を確認してください。" }, 400);
-    const result = await store.create(input.data);
-    return c.json(result, result.created ? 201 : 200);
-  }
-  const input = deleteAliasSchema.safeParse(body);
-  if (!input.success) return c.json({ error: "アドレスを確認してください。" }, 400);
-  return c.json(await store.delete(input.data.address));
-});
+export const admin = app
+  .get(
+    "/api/aliases",
+    zValidator("query", listAliasesQuerySchema, (result, c) => {
+      if (!result.success) return c.json({ error: "Invalid pagination" }, 400);
+    }),
+    async (c) => c.json(await createAliasStore(c.env.DB).list(c.req.valid("query"))),
+  )
+  .post(
+    "/api/aliases",
+    zValidator("json", createAliasSchema, (result, c) => {
+      if (!result.success)
+        return c.json({ error: "アドレス・メモ・サービス URL を確認してください。" }, 400);
+    }),
+    async (c) => {
+      const result = await createAliasStore(c.env.DB).create(c.req.valid("json"));
+      return c.json(result, result.created ? 201 : 200);
+    },
+  )
+  .patch(
+    "/api/aliases",
+    zValidator("json", updateAliasSchema, (result, c) => {
+      if (!result.success)
+        return c.json(
+          { error: "アドレス・メモ・サービス URL・有効状態の指定を確認してください。" },
+          400,
+        );
+    }),
+    async (c) => {
+      const input = c.req.valid("json");
+      const store = createAliasStore(c.env.DB);
+      const result =
+        "disabled" in input ? await store.setDisabled(input) : await store.updateDetails(input);
+      if (!result.updated) return c.json({ error: "エイリアスが見つかりません。" }, 404);
+      return c.json(result);
+    },
+  )
+  .delete(
+    "/api/aliases",
+    zValidator("json", deleteAliasSchema, (result, c) => {
+      if (!result.success) return c.json({ error: "アドレスを確認してください。" }, 400);
+    }),
+    async (c) => c.json(await createAliasStore(c.env.DB).delete(c.req.valid("json").address)),
+  );
 
-admin.onError((error, c) => {
+export type AdminApi = typeof admin;
+
+app.onError((error, c) => {
   if (error instanceof HTTPException) return error.getResponse();
   console.error("Admin request failed", error);
   return c.json({ error: "操作に失敗しました。再度お試しください。" }, 500);

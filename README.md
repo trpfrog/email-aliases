@@ -36,7 +36,7 @@ src/
 │   ├── main.tsx          # React の起動
 │   ├── app.tsx           # 画面の組み立て
 │   ├── theme.ts          # Mantine の緑テーマ・標準フォント
-│   ├── api/              # 型付き API クライアント
+│   ├── api/              # Hono RPC の型付き API クライアント
 │   ├── hooks/            # 一覧取得と追加・削除の状態管理
 │   ├── components/
 │   │   ├── aliases/      # 見出し・検索欄・テーブル・行・空状態・ダイアログ
@@ -58,6 +58,8 @@ src/
 MCP とメール受信は同じ store を使い、SQL は `queries/` に集約する。
 store には DB クライアント、メール受信には存在確認だけを渡す。
 認証と通信処理を変更しても、エイリアス操作の実装に手を入れる必要はない。
+管理画面は `admin/routes.ts` の `AdminApi` 型を `hono/client` の `hc` に渡し、
+Zod による入力検証と JSON レスポンスからリクエスト・レスポンスの型を共有する。
 
 ## SQL と型検査
 

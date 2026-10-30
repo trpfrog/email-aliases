@@ -7,6 +7,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterAll, beforeAll, expect, test, vi } from "vite-plus/test";
 import { promisify } from "node:util";
+import { hc } from "hono/client";
 
 const run = promisify(execFile);
 const root = resolve(import.meta.dirname, "..");
@@ -200,10 +201,11 @@ test("React 管理画面と API の認証・検証・D1 操作", async () => {
     (await request("/api/aliases?offset=-1", { headers: { Authorization: basic } })).status,
   ).toBe(400);
 
-  const created = await request("/api/aliases", { method: "POST", headers, body });
+  const aliases = hc(base, { headers: { Authorization: basic, Origin: base } }).api.aliases;
+  const created = await aliases.$post({ json: JSON.parse(body) });
   expect(created.status).toBe(201);
   expect((await created.json()).alias.address).toBe("admin-test@mail.example.com");
-  expect((await request("/api/aliases", { method: "POST", headers, body })).status).toBe(200);
+  expect((await aliases.$post({ json: JSON.parse(body) })).status).toBe(200);
   expect(
     (
       await request("/api/aliases", {
@@ -217,11 +219,10 @@ test("React 管理画面と API の認証・検証・D1 操作", async () => {
     ).status,
   ).toBe(400);
   const patch = (changes, overrides = {}) =>
-    request("/api/aliases", {
-      method: "PATCH",
-      headers: { ...headers, ...overrides },
-      body: JSON.stringify({ address: "admin-test@mail.example.com", ...changes }),
-    });
+    aliases.$patch(
+      { json: { address: "admin-test@mail.example.com", ...changes } },
+      { headers: overrides },
+    );
   expect((await patch({ disabled: true }, { Origin: "https://other.example" })).status).toBe(403);
   for (const changes of [
     { disabled: "true" },
@@ -261,12 +262,13 @@ test("React 管理画面と API の認証・検証・D1 操作", async () => {
     note: "一括更新",
   });
   await patch({ note: "管理画面テスト", service_url: "https://example.com/settings" });
-  const list = await request("/api/aliases", { headers: { Authorization: basic } });
+  const list = await aliases.$get({ query: { offset: "0" } });
   expect((await list.json()).aliases).toContainEqual(
     expect.objectContaining({ address: "admin-test@mail.example.com", note: "管理画面テスト" }),
   );
   expect(
-    (await (await request("/api/aliases", { method: "DELETE", headers, body })).json()).deleted,
+    (await (await aliases.$delete({ json: { address: "admin-test@mail.example.com" } })).json())
+      .deleted,
   ).toBe(true);
 });
 

@@ -1,32 +1,33 @@
-import type { AliasStore } from "../../aliases/store";
+import { hc, parseResponse, type InferResponseType } from "hono/client";
+import type { AdminApi } from "../../admin/routes";
 
-export type Alias = Awaited<ReturnType<AliasStore["list"]>>["aliases"][number];
+const client = hc<AdminApi>("/", {
+  init: { credentials: "same-origin" },
+  fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
+    const response = await fetch(input, init);
+    if (!response.ok) {
+      if (response.status === 401)
+        throw new Error("認証の有効期限が切れました。ページを再読み込みしてください。");
+      const data = await response.json().catch(() => ({}));
+      const message =
+        data && typeof data === "object" && "error" in data && typeof data.error === "string"
+          ? data.error
+          : "読み込みに失敗しました。";
+      throw new Error(message);
+    }
+    return response;
+  },
+}).api.aliases;
 
-async function api<T>(method = "GET", body?: unknown, offset = 0): Promise<T> {
-  const response = await fetch(`/api/aliases?offset=${offset}`, {
-    method,
-    credentials: "same-origin",
-    ...(body
-      ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }
-      : {}),
-  });
-  if (!response.ok) {
-    if (response.status === 401)
-      throw new Error("認証の有効期限が切れました。ページを再読み込みしてください。");
-    const data = await response.json().catch(() => ({}));
-    throw new Error(data.error ?? "読み込みに失敗しました。");
-  }
-  return response.json();
-}
+export type Alias = InferResponseType<typeof client.$get, 200>["aliases"][number];
 
 export const aliasApi = {
-  list: (offset: number) => api<Awaited<ReturnType<AliasStore["list"]>>>("GET", undefined, offset),
+  list: (offset: number) => parseResponse(client.$get({ query: { offset: String(offset) } })),
   create: (address: string, note: string, service_url: string) =>
-    api<Awaited<ReturnType<AliasStore["create"]>>>("POST", { address, note, service_url }),
-  delete: (address: string) =>
-    api<Awaited<ReturnType<AliasStore["delete"]>>>("DELETE", { address }),
+    parseResponse(client.$post({ json: { address, note, service_url } })),
+  delete: (address: string) => parseResponse(client.$delete({ json: { address } })),
   setDisabled: (address: string, disabled: boolean) =>
-    api<Awaited<ReturnType<AliasStore["setDisabled"]>>>("PATCH", { address, disabled }),
+    parseResponse(client.$patch({ json: { address, disabled } })),
   updateDetails: (address: string, note: string, service_url: string) =>
-    api<Awaited<ReturnType<AliasStore["updateDetails"]>>>("PATCH", { address, note, service_url }),
+    parseResponse(client.$patch({ json: { address, note, service_url } })),
 };
