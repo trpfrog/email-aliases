@@ -1,35 +1,42 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import useSWRImmutable from "swr/immutable";
 import { aliasApi, type Alias } from "../api/aliases";
 
+async function fetchAliases() {
+  const rows: Alias[] = [];
+  let offset: number | null = 0;
+  do {
+    const page = await aliasApi.list(offset);
+    rows.push(...page.aliases);
+    offset = page.next_offset;
+  } while (offset !== null);
+  return rows;
+}
+
 export function useAliases() {
-  const [aliases, setAliases] = useState<Alias[]>([]);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const {
+    data: aliases = [],
+    isLoading,
+    isValidating,
+    mutate: revalidate,
+  } = useSWRImmutable("/api/aliases", fetchAliases, {
+    shouldRetryOnError: false,
+    onSuccess: () => setError(""),
+    onError: (err: unknown) =>
+      setError(err instanceof Error ? err.message : "読み込みに失敗しました。"),
+  });
 
   async function refresh() {
-    setLoading(true);
     setError("");
     try {
-      const rows: Alias[] = [];
-      let offset: number | null = 0;
-      do {
-        const page = await aliasApi.list(offset);
-        rows.push(...page.aliases);
-        offset = page.next_offset;
-      } while (offset !== null);
-      setAliases(rows);
+      await revalidate();
     } catch (err) {
       setError(err instanceof Error ? err.message : "読み込みに失敗しました。");
-    } finally {
-      setLoading(false);
     }
   }
-
-  useEffect(() => {
-    void refresh();
-  }, []);
 
   async function mutate(operation: () => Promise<string>) {
     setSaving(true);
@@ -48,7 +55,7 @@ export function useAliases() {
 
   return {
     aliases,
-    loading,
+    loading: isLoading || isValidating,
     saving,
     error,
     notice,

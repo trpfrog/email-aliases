@@ -10,7 +10,7 @@
 ChatGPT → OAuth → /mcp → D1 の作成・一覧・更新・削除
 ```
 
-TypeScript / React / Mantine / Hono（`hono/jsx`）/ Vite+ / SWC / React Compiler / Reylo / Cloudflare Workers / D1。
+TypeScript / React / SWR / Mantine / Hono（`hono/jsx`）/ Vite+ / SWC / React Compiler / Reylo / Cloudflare Workers / D1。
 Worker は 1 つ、D1 は 1 テーブル。OAuth の保存先として KV を 1 つ使う。
 `/` に React SPA の管理画面があり、一覧・検索・追加・メモとサービス URL の編集・無効化・有効化・削除に対応する。
 ユーザー登録・メール本文の保存はない。接続承認ページは Hono で返す。
@@ -133,6 +133,7 @@ vp run dev
 検索はアドレス・メモ・サービス URL が対象。管理 API は `/api/aliases` で、MCP と同じ store を使う。
 各行の「操作」から登録情報の編集・無効化・有効化・削除を選べる。一覧は「有効・無効・すべて」で切り替える。
 サービス URL は追加・編集画面で入力でき、一覧のリンクから別タブで開ける。
+一覧は SWR の `useSWRImmutable` でキャッシュし、初回表示・手動更新・追加や更新、削除の後に取得する。フォーカス復帰・再接続・エラー時の自動再取得は行わない。
 `PATCH /api/aliases` は `{ address, disabled: boolean }` または `{ address, note?: string, service_url?: string }` を受け付ける。
 登録情報の更新ではメモ・URL の少なくとも一方を指定する。省略した項目は変更しない。
 追加・更新・削除は `PUBLIC_ORIGIN` と同じ Origin の JSON リクエストに限定する。
