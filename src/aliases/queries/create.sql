@@ -3,4 +3,4 @@ VALUES (:address, :note)
 
 ON CONFLICT(address) DO NOTHING
 
-RETURNING address, note, created_at;
+RETURNING address, note, created_at, disabled_at;

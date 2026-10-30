@@ -60,6 +60,16 @@ export function useAliases() {
         const result = await aliasApi.create(address, note);
         return result.created ? "追加しました" : "登録済みのアドレスです";
       }),
+    updateNote: (address: string, note: string) =>
+      mutate(async () => {
+        await aliasApi.updateNote(address, note);
+        return "メモを更新しました";
+      }),
+    setDisabled: (address: string, disabled: boolean) =>
+      mutate(async () => {
+        await aliasApi.setDisabled(address, disabled);
+        return disabled ? "無効化しました" : "有効化しました";
+      }),
     remove: (address: string) =>
       mutate(async () => {
         await aliasApi.delete(address);

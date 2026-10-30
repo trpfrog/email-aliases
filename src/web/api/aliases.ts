@@ -25,4 +25,8 @@ export const aliasApi = {
     api<Awaited<ReturnType<AliasStore["create"]>>>("POST", { address, note }),
   delete: (address: string) =>
     api<Awaited<ReturnType<AliasStore["delete"]>>>("DELETE", { address }),
+  setDisabled: (address: string, disabled: boolean) =>
+    api<Awaited<ReturnType<AliasStore["setDisabled"]>>>("PATCH", { address, disabled }),
+  updateNote: (address: string, note: string) =>
+    api<Awaited<ReturnType<AliasStore["updateNote"]>>>("PATCH", { address, note }),
 };

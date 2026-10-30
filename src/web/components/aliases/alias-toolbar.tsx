@@ -1,15 +1,36 @@
-import { Button, Group, TextInput } from "@mantine/core";
+import { Button, Group, SegmentedControl, TextInput } from "@mantine/core";
+
+export type AliasStatus = "enabled" | "disabled" | "all";
 
 type Props = {
   search: string;
   onSearch: (value: string) => void;
   disabled: boolean;
   onRefresh: () => void;
+  status: AliasStatus;
+  onStatusChange: (status: AliasStatus) => void;
 };
 
-export function AliasToolbar({ search, onSearch, disabled, onRefresh }: Props) {
+export function AliasToolbar({
+  search,
+  onSearch,
+  disabled,
+  onRefresh,
+  status,
+  onStatusChange,
+}: Props) {
   return (
-    <Group p="md" wrap="nowrap">
+    <Group p="md">
+      <SegmentedControl<AliasStatus>
+        aria-label="エイリアスの状態"
+        value={status}
+        onChange={onStatusChange}
+        data={[
+          { label: "有効", value: "enabled" },
+          { label: "無効", value: "disabled" },
+          { label: "すべて", value: "all" },
+        ]}
+      />
       <TextInput
         flex={1}
         maw={400}

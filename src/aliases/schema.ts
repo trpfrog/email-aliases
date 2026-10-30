@@ -31,3 +31,13 @@ export const listAliasesSchema = z.object({
 });
 
 export const deleteAliasSchema = z.object({ address: addressSchema });
+
+export const setAliasDisabledSchema = z.strictObject({
+  address: addressSchema,
+  disabled: z.boolean(),
+});
+export const updateAliasNoteSchema = z.strictObject({
+  address: addressSchema,
+  note: z.string().max(1000),
+});
+export const updateAliasSchema = z.union([setAliasDisabledSchema, updateAliasNoteSchema]);

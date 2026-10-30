@@ -200,6 +200,37 @@ test("React 管理画面と API の認証・検証・D1 操作", async () => {
   expect(created.status).toBe(201);
   expect((await created.json()).alias.address).toBe("admin-test@mail.example.com");
   expect((await request("/api/aliases", { method: "POST", headers, body })).status).toBe(200);
+  const patch = (changes, overrides = {}) =>
+    request("/api/aliases", {
+      method: "PATCH",
+      headers: { ...headers, ...overrides },
+      body: JSON.stringify({ address: "admin-test@mail.example.com", ...changes }),
+    });
+  expect((await patch({ disabled: true }, { Origin: "https://other.example" })).status).toBe(403);
+  for (const changes of [
+    { disabled: "true" },
+    { note: "x".repeat(1001) },
+    {},
+    { disabled: true, note: "both" },
+  ]) {
+    expect((await patch(changes)).status).toBe(400);
+  }
+  expect((await patch({ address: "missing@mail.example.com", disabled: true })).status).toBe(404);
+  expect((await patch({ address: "missing@mail.example.com", note: "missing" })).status).toBe(404);
+  expect((await (await patch({ disabled: true })).json()).alias).toMatchObject({
+    disabled_at: expect.any(String),
+    note: "管理画面テスト",
+  });
+  expect((await (await patch({ note: "変更したメモ" })).json()).alias).toMatchObject({
+    disabled_at: expect.any(String),
+    note: "変更したメモ",
+  });
+  expect((await (await patch({ note: "" })).json()).alias).toMatchObject({
+    disabled_at: expect.any(String),
+    note: "",
+  });
+  expect((await (await patch({ disabled: false })).json()).alias.disabled_at).toBeNull();
+  await patch({ note: "管理画面テスト" });
   const list = await request("/api/aliases", { headers: { Authorization: basic } });
   expect((await list.json()).aliases).toContainEqual(
     expect.objectContaining({ address: "admin-test@mail.example.com", note: "管理画面テスト" }),
@@ -324,6 +355,8 @@ test("実際のローカル D1/KV で OAuth の接続承認・PKCE・MCP・ト�
     "create_alias",
     "delete_alias",
     "list_aliases",
+    "set_alias_disabled",
+    "update_alias_note",
   ]);
 
   expect(

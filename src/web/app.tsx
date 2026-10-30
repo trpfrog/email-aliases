@@ -9,11 +9,14 @@ import { useAliases } from "./hooks/use-aliases";
 import { AliasDirectory } from "./components/aliases/alias-directory";
 import { CreateAliasDialog } from "./components/aliases/create-alias-dialog";
 import { DeleteAliasDialog } from "./components/aliases/delete-alias-dialog";
+import { EditAliasNoteDialog } from "./components/aliases/edit-alias-note-dialog";
+
+type Dialog = { type: "create" } | { type: "delete" | "editNote"; alias: Alias };
 
 export function App() {
   const aliases = useAliases();
-  const [dialog, setDialog] = useState<"create" | Alias | null>(null);
-  function openDialog(value: "create" | Alias) {
+  const [dialog, setDialog] = useState<Dialog | null>(null);
+  function openDialog(value: Dialog) {
     aliases.clearError();
     setDialog(value);
   }
@@ -30,7 +33,7 @@ export function App() {
           <AliasPageHeading
             loading={aliases.loading}
             count={aliases.aliases.length}
-            onCreate={() => openDialog("create")}
+            onCreate={() => openDialog({ type: "create" })}
           />
           <AliasDirectory
             aliases={aliases.aliases}
@@ -38,14 +41,16 @@ export function App() {
             saving={aliases.saving}
             error={dialog ? "" : aliases.error}
             onRefresh={() => void aliases.refresh()}
-            onCreate={() => openDialog("create")}
-            onDelete={openDialog}
+            onCreate={() => openDialog({ type: "create" })}
+            onDelete={(alias) => openDialog({ type: "delete", alias })}
+            onEditNote={(alias) => openDialog({ type: "editNote", alias })}
+            onSetDisabled={(address, disabled) => void aliases.setDisabled(address, disabled)}
           />
           <AppFooter />
         </Stack>
       </Container>
       <StatusNotification message={aliases.notice} onClose={aliases.clearNotice} />
-      {dialog === "create" && (
+      {dialog?.type === "create" && (
         <CreateAliasDialog
           saving={aliases.saving}
           error={aliases.error}
@@ -53,9 +58,18 @@ export function App() {
           onCreate={aliases.create}
         />
       )}
-      {dialog && dialog !== "create" && (
+      {dialog?.type === "editNote" && (
+        <EditAliasNoteDialog
+          alias={dialog.alias}
+          saving={aliases.saving}
+          error={aliases.error}
+          onClose={closeDialog}
+          onSave={aliases.updateNote}
+        />
+      )}
+      {dialog?.type === "delete" && (
         <DeleteAliasDialog
-          alias={dialog}
+          alias={dialog.alias}
           saving={aliases.saving}
           error={aliases.error}
           onClose={closeDialog}

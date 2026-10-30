@@ -2,7 +2,12 @@ import { Hono } from "hono";
 import { basicAuth } from "hono/basic-auth";
 import { HTTPException } from "hono/http-exception";
 import { createAliasStore } from "../aliases/store";
-import { createAliasSchema, deleteAliasSchema, listAliasesSchema } from "../aliases/schema";
+import {
+  createAliasSchema,
+  deleteAliasSchema,
+  listAliasesSchema,
+  updateAliasSchema,
+} from "../aliases/schema";
 import type { Env } from "../env";
 
 export const admin = new Hono<{ Bindings: Env }>();
@@ -42,9 +47,20 @@ admin.get("/api/aliases", async (c) => {
   return c.json(await createAliasStore(c.env.DB).list(input.data));
 });
 
-admin.on(["POST", "DELETE"], "/api/aliases", async (c) => {
+admin.on(["POST", "PATCH", "DELETE"], "/api/aliases", async (c) => {
   const body = await c.req.json().catch(() => null);
   const store = createAliasStore(c.env.DB);
+  if (c.req.method === "PATCH") {
+    const input = updateAliasSchema.safeParse(body);
+    if (!input.success)
+      return c.json({ error: "アドレス・メモ・有効状態の指定を確認してください。" }, 400);
+    const result =
+      "disabled" in input.data
+        ? await store.setDisabled(input.data)
+        : await store.updateNote(input.data);
+    if (!result.updated) return c.json({ error: "エイリアスが見つかりません。" }, 404);
+    return c.json(result);
+  }
   if (c.req.method === "POST") {
     const input = createAliasSchema.safeParse(body);
     if (!input.success) return c.json({ error: "アドレスまたはメモを確認してください。" }, 400);

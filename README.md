@@ -4,15 +4,15 @@
 
 ```text
 受信メール → Cloudflare Email Routing の Catch-all → Worker
-                                                    └ D1 に宛先がある → 固定の受信箱へ転送
-                                                    └ 宛先がない     → drop
+                                                    └ 有効な宛先がある → 固定の受信箱へ転送
+                                                    └ 未登録・無効     → drop
 
-ChatGPT → OAuth → /mcp → D1 の作成・一覧・削除
+ChatGPT → OAuth → /mcp → D1 の作成・一覧・更新・削除
 ```
 
 TypeScript / React / Mantine / Hono（`hono/jsx`）/ Vite+ / SWC / React Compiler / Reylo / Cloudflare Workers / D1。
 Worker は 1 つ、D1 は 1 テーブル。OAuth の保存先として KV を 1 つ使う。
-`/` に React SPA の管理画面があり、一覧・検索・追加・削除に対応する。
+`/` に React SPA の管理画面があり、一覧・検索・追加・メモ編集・無効化・有効化・削除に対応する。
 ユーザー登録・メール本文の保存はない。接続承認ページは Hono で返す。
 開発・デプロイ・リソース操作には `cf` CLI を使う。
 
@@ -26,10 +26,10 @@ src/
 ├── env.ts                # Worker bindings の型
 ├── aliases/
 │   ├── schema.ts         # 入力検証と正規化
-│   ├── store.ts          # エイリアスの作成・一覧・削除・存在確認
+│   ├── store.ts          # エイリアスの作成・一覧・更新・削除・有効状態の確認
 │   ├── store.test.ts     # SQLite と MCP を使った操作・受信判断のテスト
 │   └── queries/*.sql     # Reylo が型推論する SQL
-├── email/handler.ts      # 登録済みなら転送、未登録なら drop
+├── email/handler.ts      # 有効な登録済み宛先なら転送、未登録・無効なら drop
 ├── admin/routes.ts       # 管理画面と JSON API の Basic 認証・Origin 検証
 ├── web/
 │   ├── main.tsx          # React の起動
@@ -93,11 +93,17 @@ VS Code が既に起動していると既存プロセスの環境が再利用さ
 
 ## MCP ツール
 
-| ツール         | 入力                | 動作                                             |
-| -------------- | ------------------- | ------------------------------------------------ |
-| `create_alias` | `address`, `note?`  | 受信を許可。同じアドレスは変更しない             |
-| `list_aliases` | `limit?`, `offset?` | アドレス順に一覧。`next_offset` で次ページを取得 |
-| `delete_alias` | `address`           | 登録を削除。以後のメールを drop                  |
+| ツール               | 入力                  | 動作                                              |
+| -------------------- | --------------------- | ------------------------------------------------- |
+| `create_alias`       | `address`, `note?`    | 受信を許可。同じアドレスは変更しない              |
+| `list_aliases`       | `limit?`, `offset?`   | アドレス順に一覧。`next_offset` で次ページを取得  |
+| `delete_alias`       | `address`             | 登録を削除。以後のメールを drop                   |
+| `set_alias_disabled` | `address`, `disabled` | `true` で転送停止、`false` で再開。登録情報は保持 |
+| `update_alias_note`  | `address`, `note`     | メモを編集。空文字で消去。有効状態は変更しない    |
+
+一覧には無効なエイリアスも含む。`disabled_at` が `null` なら有効、日時が入っていれば無効。
+無効化を繰り返しても日時は維持され、有効化すると `null` に戻る。
+既存アドレスを `create_alias` で再登録してもメモや無効状態は変わらない。
 
 `address` は `shopping@mail.example.com` のようなドメインを含む完全なアドレス。前後の空白を除去して小文字にする。
 Web UI では `@` より前だけを入力し、UI 側でドメインを付けて API に送信する。
@@ -122,6 +128,8 @@ pnpm dev
 開発 URL は `http://localhost:5173`。`/health` で起動を確認できる。
 `/` を開き、Basic 認証の `admin` と `ADMIN_PASSWORD` で管理画面にログインする。
 検索はアドレス・メモが対象。管理 API は `/api/aliases` で、MCP と同じ store を使う。
+各行の「操作」からメモ編集・無効化・有効化・削除を選べる。一覧は「有効・無効・すべて」で切り替える。
+`PATCH /api/aliases` は `{ address, disabled: boolean }` または `{ address, note: string }` を受け付ける。
 追加・削除は `PUBLIC_ORIGIN` と同じ Origin の JSON リクエストに限定する。
 React 側の変換は SWC、最適化は SWC 内蔵の React Compiler を使う。
 UI は Mantine のコンポーネントと style props、`theme.ts` で構成し、独自 CSS・外部フォントは使わない。
@@ -169,6 +177,8 @@ Vite+ 同梱の Vitest を使い、API は `vite-plus/test` から明示的に i
    ID を固定して、再デプロイ後も同じ DB・OAuth トークンを使う。
 
 3. 本番 D1 にマイグレーションを適用する。`cf` は DB 名や binding 名ではなく **database ID** を受け取る。
+
+   既存環境の更新時も、デプロイ前に適用する。`0002_alias_disabled_at.sql` は既存の登録を有効なまま引き継ぐ。
 
    ```sh
    pnpm exec cf d1 migrations apply <database-id>

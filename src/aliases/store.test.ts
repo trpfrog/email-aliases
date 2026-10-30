@@ -7,7 +7,7 @@ import { describe, expect, expectTypeOf, it as baseIt, vi } from "vite-plus/test
 import type { AliasAddress } from "./schema";
 import { addressSchema } from "./schema";
 import { receiveEmail } from "../email/handler";
-import { createAliasStore } from "./store";
+import { createAliasStore, type AliasStore } from "./store";
 import { createServer } from "../mcp/server";
 
 const it = baseIt
@@ -55,6 +55,103 @@ const it = baseIt
   );
 
 describe("エイリアスの作成から削除まで", () => {
+  it("無効化で転送を停止し、メモや作成日時を保持して再有効化できる", async ({
+    client,
+    forward,
+    receive,
+  }) => {
+    const address = "toggle@mail.example.com";
+    const created = await client.callTool({
+      name: "create_alias",
+      arguments: { address, note: "残すメモ" },
+    });
+    const original = (created.structuredContent as Awaited<ReturnType<AliasStore["create"]>>).alias;
+    const disabled = await client.callTool({
+      name: "set_alias_disabled",
+      arguments: { address, disabled: true },
+    });
+    expect(disabled.structuredContent).toMatchObject({
+      updated: true,
+      alias: { ...original, disabled_at: expect.any(String) },
+    });
+    const repeated = await client.callTool({
+      name: "set_alias_disabled",
+      arguments: { address, disabled: true },
+    });
+    expect(repeated.structuredContent).toEqual(disabled.structuredContent);
+    await receive({ to: address, forward });
+    expect(forward).not.toHaveBeenCalled();
+
+    const duplicate = await client.callTool({
+      name: "create_alias",
+      arguments: { address, note: "上書きしない" },
+    });
+    expect(duplicate.structuredContent).toMatchObject({
+      created: false,
+      alias: { note: "残すメモ", disabled_at: expect.any(String) },
+    });
+    const list = await client.callTool({ name: "list_aliases" });
+    expect(list.structuredContent).toMatchObject({
+      aliases: [{ address, note: "残すメモ", disabled_at: expect.any(String) }],
+    });
+
+    const enabled = await client.callTool({
+      name: "set_alias_disabled",
+      arguments: { address, disabled: false },
+    });
+    expect(enabled.structuredContent).toMatchObject({ updated: true, alias: original });
+    await receive({ to: address, forward });
+    expect(forward).toHaveBeenCalledExactlyOnceWith("inbox@example.com");
+
+    await client.callTool({ name: "set_alias_disabled", arguments: { address, disabled: true } });
+    expect(
+      (await client.callTool({ name: "delete_alias", arguments: { address } })).structuredContent,
+    ).toMatchObject({ deleted: true });
+    expect(
+      (
+        await client.callTool({
+          name: "set_alias_disabled",
+          arguments: { address, disabled: false },
+        })
+      ).structuredContent,
+    ).toMatchObject({ updated: false, alias: null });
+  });
+
+  it("メモだけを更新・消去し、無効状態や作成日時を変更しない", async ({ client }) => {
+    const address = "notes@mail.example.com";
+    await client.callTool({
+      name: "create_alias",
+      arguments: { address, note: "元のメモ" },
+    });
+    const disabled = await client.callTool({
+      name: "set_alias_disabled",
+      arguments: { address, disabled: true },
+    });
+    for (const note of ["変更したメモ", ""]) {
+      const updated = await client.callTool({
+        name: "update_alias_note",
+        arguments: { address, note },
+      });
+      expect(updated.structuredContent).toMatchObject({
+        updated: true,
+        alias: {
+          ...(disabled.structuredContent as Awaited<ReturnType<AliasStore["setDisabled"]>>).alias,
+          note,
+        },
+      });
+    }
+    const invalid = await client.callTool({
+      name: "update_alias_note",
+      arguments: { address, note: "x".repeat(1001) },
+    });
+    expect(invalid.isError).toBe(true);
+    const missing = await client.callTool({
+      name: "update_alias_note",
+      arguments: { address: "missing@mail.example.com", note: "メモ" },
+    });
+    expect(missing.structuredContent).toMatchObject({ updated: false, alias: null });
+  });
+
   it("未登録の宛先は破棄し、登録後は転送し、削除後は再び破棄する", async ({
     client,
     forward,

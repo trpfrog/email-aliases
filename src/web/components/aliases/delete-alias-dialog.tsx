@@ -36,7 +36,8 @@ export function DeleteAliasDialog({
           </Text>
         </Paper>
         <Text size="sm" c="dimmed">
-          削除後、この宛先へのメールは受信されません。
+          登録情報とメモを完全に削除します。削除後、この宛先へのメールは転送されません。
+          情報を残して転送を止めたい場合は、無効化してください。
         </Text>
         {error && (
           <Alert color="red" role="alert">
