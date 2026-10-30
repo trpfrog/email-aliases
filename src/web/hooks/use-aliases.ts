@@ -55,15 +55,15 @@ export function useAliases() {
     refresh,
     clearError: () => setError(""),
     clearNotice: () => setNotice(""),
-    create: (address: string, note: string) =>
+    create: (address: string, note: string, serviceUrl: string) =>
       mutate(async () => {
-        const result = await aliasApi.create(address, note);
+        const result = await aliasApi.create(address, note, serviceUrl);
         return result.created ? "追加しました" : "登録済みのアドレスです";
       }),
-    updateNote: (address: string, note: string) =>
+    updateDetails: (address: string, note: string, serviceUrl: string) =>
       mutate(async () => {
-        await aliasApi.updateNote(address, note);
-        return "メモを更新しました";
+        await aliasApi.updateDetails(address, note, serviceUrl);
+        return "登録情報を更新しました";
       }),
     setDisabled: (address: string, disabled: boolean) =>
       mutate(async () => {

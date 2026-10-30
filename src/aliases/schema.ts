@@ -20,9 +20,24 @@ export const addressSchema = z
 
 export type AliasAddress = z.output<typeof addressSchema>;
 
+export const serviceUrlSchema = z
+  .string()
+  .trim()
+  .max(2048)
+  .refine((value) => {
+    if (value === "") return true;
+    try {
+      const url = new URL(value);
+      return url.protocol === "https:" || url.protocol === "http:";
+    } catch {
+      return false;
+    }
+  }, "サービス URL は http:// または https:// で始まる URL を入力してください。");
+
 export const createAliasSchema = z.object({
   address: addressSchema,
   note: z.string().max(1000).default(""),
+  service_url: serviceUrlSchema.default(""),
 });
 
 export const listAliasesSchema = z.object({
@@ -40,4 +55,14 @@ export const updateAliasNoteSchema = z.strictObject({
   address: addressSchema,
   note: z.string().max(1000),
 });
-export const updateAliasSchema = z.union([setAliasDisabledSchema, updateAliasNoteSchema]);
+export const updateAliasDetailsSchema = z
+  .strictObject({
+    address: addressSchema,
+    note: z.string().max(1000).optional(),
+    service_url: serviceUrlSchema.optional(),
+  })
+  .refine(
+    (input) => input.note !== undefined || input.service_url !== undefined,
+    "更新する項目を指定してください。",
+  );
+export const updateAliasSchema = z.union([setAliasDisabledSchema, updateAliasDetailsSchema]);

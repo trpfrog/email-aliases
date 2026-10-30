@@ -5,14 +5,14 @@ import type {
   createAliasSchema,
   listAliasesSchema,
   setAliasDisabledSchema,
-  updateAliasNoteSchema,
+  updateAliasDetailsSchema,
 } from "./schema";
 import createAlias from "./queries/create.sql";
 import deleteAlias from "./queries/delete.sql";
 import getAlias from "./queries/get.sql";
 import listAliases from "./queries/list.sql";
 import setDisabled from "./queries/set-disabled.sql";
-import updateNote from "./queries/update-note.sql";
+import updateDetails from "./queries/update-details.sql";
 
 // Reylo がマイグレーション適用後のスキーマからクエリの引数と結果の型を推論する。
 export function createAliasStore(db: SqliteClient) {
@@ -45,8 +45,14 @@ export function createAliasStore(db: SqliteClient) {
       return { updated: alias !== null, alias };
     },
 
-    async updateNote(input: z.output<typeof updateAliasNoteSchema>) {
-      const alias = await updateNote.run(db, input);
+    async updateDetails(input: z.output<typeof updateAliasDetailsSchema>) {
+      const alias = await updateDetails.run(db, {
+        address: input.address,
+        note: input.note ?? "",
+        service_url: input.service_url ?? "",
+        update_note: input.note === undefined ? 0 : 1,
+        update_service_url: input.service_url === undefined ? 0 : 1,
+      });
       return { updated: alias !== null, alias };
     },
 

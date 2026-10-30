@@ -6,6 +6,7 @@ import {
   listAliasesSchema,
   setAliasDisabledSchema,
   updateAliasNoteSchema,
+  updateAliasDetailsSchema,
 } from "../aliases/schema";
 import { DOMAIN } from "../config";
 
@@ -22,7 +23,7 @@ export function createServer(aliases: AliasStore) {
   server.registerTool(
     "create_alias",
     {
-      description: `Allow an address at ${DOMAIN} to receive forwarded email. Requires a full address including the domain. Creating an existing alias leaves its note and disabled state unchanged.`,
+      description: `Allow an address at ${DOMAIN} to receive forwarded email, with an optional note and HTTP(S) service_url. Requires a full address including the domain. Creating an existing alias leaves its note, service URL, and disabled state unchanged.`,
       inputSchema: createAliasSchema.shape,
       annotations: {
         readOnlyHint: false,
@@ -74,7 +75,23 @@ export function createServer(aliases: AliasStore) {
         openWorldHint: false,
       },
     },
-    async (input) => result(await aliases.updateNote(input)),
+    async (input) => result(await aliases.updateDetails(input)),
+  );
+
+  server.registerTool(
+    "update_alias_details",
+    {
+      description:
+        "Update an existing alias's note and/or service URL without changing its address or enabled state. Omitted fields remain unchanged; empty strings clear them. Service URLs must use HTTP or HTTPS.",
+      inputSchema: updateAliasDetailsSchema,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    async (input) => result(await aliases.updateDetails(input)),
   );
 
   server.registerTool(

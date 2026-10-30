@@ -15,7 +15,7 @@ type Props = {
   onCreate: () => void;
   onDelete: (alias: Alias) => void;
   onSetDisabled: (address: string, disabled: boolean) => void;
-  onEditNote: (alias: Alias) => void;
+  onEditDetails: (alias: Alias) => void;
 };
 
 export function AliasDirectory({
@@ -27,14 +27,16 @@ export function AliasDirectory({
   onCreate,
   onDelete,
   onSetDisabled,
-  onEditNote,
+  onEditDetails,
 }: Props) {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<AliasStatus>("enabled");
   const filtered = aliases.filter(
     (alias) =>
       (status === "all" || (alias.disabled_at !== null) === (status === "disabled")) &&
-      `${alias.address} ${alias.note}`.toLowerCase().includes(search.toLowerCase().trim()),
+      `${alias.address} ${alias.note} ${alias.service_url}`
+        .toLowerCase()
+        .includes(search.toLowerCase().trim()),
   );
   return (
     <Paper component="section" withBorder shadow="xs" aria-label="エイリアス一覧">
@@ -57,7 +59,7 @@ export function AliasDirectory({
         saving={saving || loading}
         onDelete={onDelete}
         onSetDisabled={onSetDisabled}
-        onEditNote={onEditNote}
+        onEditDetails={onEditDetails}
       />
       {loading ? (
         <Center py={64} role="status" aria-label="読み込み中">

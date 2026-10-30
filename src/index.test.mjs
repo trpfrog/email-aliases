@@ -166,7 +166,11 @@ test("React 管理画面と API の認証・検証・D1 操作", async () => {
   expect(page.headers.get("cache-control")).toContain("no-store");
 
   const headers = { Authorization: basic, Origin: base, "Content-Type": "application/json" };
-  const body = JSON.stringify({ address: "admin-test@mail.example.com", note: "管理画面テスト" });
+  const body = JSON.stringify({
+    address: "admin-test@mail.example.com",
+    note: "管理画面テスト",
+    service_url: "https://example.com/settings",
+  });
   expect(
     (
       await request("/api/aliases", {
@@ -200,6 +204,18 @@ test("React 管理画面と API の認証・検証・D1 操作", async () => {
   expect(created.status).toBe(201);
   expect((await created.json()).alias.address).toBe("admin-test@mail.example.com");
   expect((await request("/api/aliases", { method: "POST", headers, body })).status).toBe(200);
+  expect(
+    (
+      await request("/api/aliases", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          address: "bad-url@mail.example.com",
+          service_url: "javascript:alert(1)",
+        }),
+      })
+    ).status,
+  ).toBe(400);
   const patch = (changes, overrides = {}) =>
     request("/api/aliases", {
       method: "PATCH",
@@ -212,6 +228,8 @@ test("React 管理画面と API の認証・検証・D1 操作", async () => {
     { note: "x".repeat(1001) },
     {},
     { disabled: true, note: "both" },
+    { service_url: "javascript:alert(1)" },
+    { service_url: "example.com" },
   ]) {
     expect((await patch(changes)).status).toBe(400);
   }
@@ -231,6 +249,18 @@ test("React 管理画面と API の認証・検証・D1 操作", async () => {
   });
   expect((await (await patch({ disabled: false })).json()).alias.disabled_at).toBeNull();
   await patch({ note: "管理画面テスト" });
+  expect(
+    (await (await patch({ service_url: "https://example.com/account" })).json()).alias,
+  ).toMatchObject({
+    service_url: "https://example.com/account",
+    note: "管理画面テスト",
+    disabled_at: null,
+  });
+  expect((await (await patch({ note: "一括更新", service_url: "" })).json()).alias).toMatchObject({
+    service_url: "",
+    note: "一括更新",
+  });
+  await patch({ note: "管理画面テスト", service_url: "https://example.com/settings" });
   const list = await request("/api/aliases", { headers: { Authorization: basic } });
   expect((await list.json()).aliases).toContainEqual(
     expect.objectContaining({ address: "admin-test@mail.example.com", note: "管理画面テスト" }),
@@ -356,6 +386,7 @@ test("実際のローカル D1/KV で OAuth の接続承認・PKCE・MCP・ト�
     "delete_alias",
     "list_aliases",
     "set_alias_disabled",
+    "update_alias_details",
     "update_alias_note",
   ]);
 

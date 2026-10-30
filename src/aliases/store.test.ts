@@ -5,7 +5,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { describe, expect, expectTypeOf, it as baseIt, vi } from "vite-plus/test";
 import type { AliasAddress } from "./schema";
-import { addressSchema } from "./schema";
+import { addressSchema, serviceUrlSchema } from "./schema";
 import { receiveEmail } from "../email/handler";
 import { createAliasStore, type AliasStore } from "./store";
 import { createServer } from "../mcp/server";
@@ -55,6 +55,74 @@ const it = baseIt
   );
 
 describe("エイリアスの作成から削除まで", () => {
+  it("サービス URL を登録・編集・消去し、メモや有効状態を保持する", async ({ client }) => {
+    const address = "service@mail.example.com";
+    const created = await client.callTool({
+      name: "create_alias",
+      arguments: {
+        address,
+        note: "サービス",
+        service_url: " https://example.com/settings ",
+      },
+    });
+    expect(created.structuredContent).toMatchObject({
+      created: true,
+      alias: { service_url: "https://example.com/settings" },
+    });
+    const duplicate = await client.callTool({
+      name: "create_alias",
+      arguments: { address, service_url: "https://other.example" },
+    });
+    expect(duplicate.structuredContent).toMatchObject({
+      created: false,
+      alias: { service_url: "https://example.com/settings" },
+    });
+    await client.callTool({ name: "set_alias_disabled", arguments: { address, disabled: true } });
+    const noteUpdated = await client.callTool({
+      name: "update_alias_note",
+      arguments: { address, note: "変更" },
+    });
+    expect(noteUpdated.structuredContent).toMatchObject({
+      alias: {
+        note: "変更",
+        service_url: "https://example.com/settings",
+        disabled_at: expect.any(String),
+      },
+    });
+    for (const service_url of ["https://example.com/account", ""]) {
+      const updated = await client.callTool({
+        name: "update_alias_details",
+        arguments: { address, service_url },
+      });
+      expect(updated.structuredContent).toMatchObject({
+        updated: true,
+        alias: { note: "変更", service_url, disabled_at: expect.any(String) },
+      });
+    }
+    const both = await client.callTool({
+      name: "update_alias_details",
+      arguments: { address, note: "両方", service_url: "https://example.com" },
+    });
+    expect(both.structuredContent).toMatchObject({
+      alias: { note: "両方", service_url: "https://example.com" },
+    });
+    expect(
+      (await client.callTool({ name: "update_alias_details", arguments: { address } })).isError,
+    ).toBe(true);
+    expect(
+      (
+        await client.callTool({
+          name: "update_alias_details",
+          arguments: { address, service_url: "javascript:alert(1)" },
+        })
+      ).isError,
+    ).toBe(true);
+    const listed = await client.callTool({ name: "list_aliases" });
+    expect(listed.structuredContent).toMatchObject({
+      aliases: [{ address, service_url: "https://example.com" }],
+    });
+  });
+
   it("無効化で転送を停止し、メモや作成日時を保持して再有効化できる", async ({
     client,
     forward,
@@ -285,6 +353,22 @@ describe("エイリアスの作成から削除まで", () => {
 });
 
 describe("アドレスの検証", () => {
+  it.each([
+    "javascript:alert(1)",
+    "data:text/html,hello",
+    "ftp://example.com",
+    "/settings",
+    "example.com",
+    `https://example.com/${"a".repeat(2048)}`,
+  ])("サービス URL %j を拒否する", (url) => {
+    expect(serviceUrlSchema.safeParse(url).success).toBe(false);
+  });
+  it.each(["", "https://example.com/settings", "http://example.com"])(
+    "サービス URL %j を受け付ける",
+    (url) => {
+      expect(serviceUrlSchema.parse(url)).toBe(url);
+    },
+  );
   it("検証済みのアドレスだけをストアに渡せる", () => {
     type Store = ReturnType<typeof createAliasStore>;
 

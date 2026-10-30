@@ -1,0 +1,1 @@
+ALTER TABLE aliases ADD COLUMN service_url TEXT NOT NULL DEFAULT '';

@@ -7,13 +7,13 @@ export function AliasTable({
   onDelete,
   saving,
   onSetDisabled,
-  onEditNote,
+  onEditDetails,
 }: {
   aliases: Alias[];
   onDelete: (alias: Alias) => void;
   saving: boolean;
   onSetDisabled: (address: string, disabled: boolean) => void;
-  onEditNote: (alias: Alias) => void;
+  onEditDetails: (alias: Alias) => void;
 }) {
   return (
     <Table.ScrollContainer minWidth={480} type="native">
@@ -36,7 +36,7 @@ export function AliasTable({
               saving={saving}
               onDelete={onDelete}
               onSetDisabled={onSetDisabled}
-              onEditNote={onEditNote}
+              onEditDetails={onEditDetails}
             />
           ))}
         </Table.Tbody>

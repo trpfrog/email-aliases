@@ -36,8 +36,8 @@ export function AliasToolbar({
         maw={400}
         miw={0}
         type="search"
-        aria-label="アドレス・メモを検索"
-        placeholder="アドレス・メモを検索"
+        aria-label="アドレス・メモ・URL を検索"
+        placeholder="アドレス・メモ・URL を検索"
         value={search}
         onChange={(event) => onSearch(event.target.value)}
       />

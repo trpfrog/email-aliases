@@ -1,8 +1,8 @@
 import type { SubmitEvent } from "react";
-import { Alert, Button, Group, Modal, Stack, Text, Textarea } from "@mantine/core";
+import { Alert, Button, Group, Modal, Stack, Text, Textarea, TextInput } from "@mantine/core";
 import type { Alias } from "../../api/aliases";
 
-export function EditAliasNoteDialog({
+export function EditAliasDetailsDialog({
   alias,
   saving,
   error,
@@ -13,19 +13,20 @@ export function EditAliasNoteDialog({
   saving: boolean;
   error: string;
   onClose: () => void;
-  onSave: (address: string, note: string) => Promise<boolean>;
+  onSave: (address: string, note: string, serviceUrl: string) => Promise<boolean>;
 }) {
   async function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    if (await onSave(alias.address, String(data.get("note")))) onClose();
+    if (await onSave(alias.address, String(data.get("note")), String(data.get("service_url"))))
+      onClose();
   }
 
   return (
     <Modal
       opened
       onClose={onClose}
-      title="メモを編集"
+      title="登録情報を編集"
       centered
       padding="xl"
       closeOnClickOutside={!saving}
@@ -38,6 +39,19 @@ export function EditAliasNoteDialog({
           <Text size="sm" style={{ overflowWrap: "anywhere" }}>
             {alias.address}
           </Text>
+          <TextInput
+            label="サービス URL（任意）"
+            name="service_url"
+            type="url"
+            defaultValue={alias.service_url}
+            placeholder="https://example.com/settings"
+            maxLength={2048}
+            autoCapitalize="none"
+            autoComplete="off"
+            spellCheck={false}
+            disabled={saving}
+            data-autofocus
+          />
           <Textarea
             label="メモ"
             name="note"
@@ -47,7 +61,6 @@ export function EditAliasNoteDialog({
             minRows={3}
             autosize
             disabled={saving}
-            data-autofocus
           />
           {error && (
             <Alert color="red" role="alert">

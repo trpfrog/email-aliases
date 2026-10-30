@@ -12,7 +12,7 @@ const it = baseIt.extend(
       list: vi.fn(async () => ({ aliases: [], next_offset: null })),
       delete: vi.fn(async (address) => ({ address, deleted: false })),
       setDisabled: vi.fn(async () => ({ updated: false, alias: null })),
-      updateNote: vi.fn(async () => ({ updated: false, alias: null })),
+      updateDetails: vi.fn(async () => ({ updated: false, alias: null })),
     }) satisfies AliasStore,
 );
 

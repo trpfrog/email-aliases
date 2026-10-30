@@ -11,13 +11,14 @@ export function CreateAliasDialog({
   saving: boolean;
   error: string;
   onClose: () => void;
-  onCreate: (address: string, note: string) => Promise<boolean>;
+  onCreate: (address: string, note: string, serviceUrl: string) => Promise<boolean>;
 }) {
   async function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const address = `${String(data.get("address")).trim()}@${DOMAIN}`;
-    if (await onCreate(address, String(data.get("note")))) onClose();
+    if (await onCreate(address, String(data.get("note")), String(data.get("service_url"))))
+      onClose();
   }
   return (
     <Modal
@@ -52,6 +53,17 @@ export function CreateAliasDialog({
             autoComplete="off"
             disabled={saving}
             data-autofocus
+          />
+          <TextInput
+            label="サービス URL（任意）"
+            name="service_url"
+            type="url"
+            placeholder="https://example.com/settings"
+            maxLength={2048}
+            autoCapitalize="none"
+            autoComplete="off"
+            spellCheck={false}
+            disabled={saving}
           />
           <Textarea
             label="メモ（任意）"

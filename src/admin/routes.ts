@@ -53,17 +53,21 @@ admin.on(["POST", "PATCH", "DELETE"], "/api/aliases", async (c) => {
   if (c.req.method === "PATCH") {
     const input = updateAliasSchema.safeParse(body);
     if (!input.success)
-      return c.json({ error: "アドレス・メモ・有効状態の指定を確認してください。" }, 400);
+      return c.json(
+        { error: "アドレス・メモ・サービス URL・有効状態の指定を確認してください。" },
+        400,
+      );
     const result =
       "disabled" in input.data
         ? await store.setDisabled(input.data)
-        : await store.updateNote(input.data);
+        : await store.updateDetails(input.data);
     if (!result.updated) return c.json({ error: "エイリアスが見つかりません。" }, 404);
     return c.json(result);
   }
   if (c.req.method === "POST") {
     const input = createAliasSchema.safeParse(body);
-    if (!input.success) return c.json({ error: "アドレスまたはメモを確認してください。" }, 400);
+    if (!input.success)
+      return c.json({ error: "アドレス・メモ・サービス URL を確認してください。" }, 400);
     const result = await store.create(input.data);
     return c.json(result, result.created ? 201 : 200);
   }

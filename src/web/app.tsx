@@ -9,9 +9,9 @@ import { useAliases } from "./hooks/use-aliases";
 import { AliasDirectory } from "./components/aliases/alias-directory";
 import { CreateAliasDialog } from "./components/aliases/create-alias-dialog";
 import { DeleteAliasDialog } from "./components/aliases/delete-alias-dialog";
-import { EditAliasNoteDialog } from "./components/aliases/edit-alias-note-dialog";
+import { EditAliasDetailsDialog } from "./components/aliases/edit-alias-details-dialog";
 
-type Dialog = { type: "create" } | { type: "delete" | "editNote"; alias: Alias };
+type Dialog = { type: "create" } | { type: "delete" | "editDetails"; alias: Alias };
 
 export function App() {
   const aliases = useAliases();
@@ -43,7 +43,7 @@ export function App() {
             onRefresh={() => void aliases.refresh()}
             onCreate={() => openDialog({ type: "create" })}
             onDelete={(alias) => openDialog({ type: "delete", alias })}
-            onEditNote={(alias) => openDialog({ type: "editNote", alias })}
+            onEditDetails={(alias) => openDialog({ type: "editDetails", alias })}
             onSetDisabled={(address, disabled) => void aliases.setDisabled(address, disabled)}
           />
           <AppFooter />
@@ -58,13 +58,13 @@ export function App() {
           onCreate={aliases.create}
         />
       )}
-      {dialog?.type === "editNote" && (
-        <EditAliasNoteDialog
+      {dialog?.type === "editDetails" && (
+        <EditAliasDetailsDialog
           alias={dialog.alias}
           saving={aliases.saving}
           error={aliases.error}
           onClose={closeDialog}
-          onSave={aliases.updateNote}
+          onSave={aliases.updateDetails}
         />
       )}
       {dialog?.type === "delete" && (

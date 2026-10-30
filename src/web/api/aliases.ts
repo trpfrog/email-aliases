@@ -21,12 +21,12 @@ async function api<T>(method = "GET", body?: unknown, offset = 0): Promise<T> {
 
 export const aliasApi = {
   list: (offset: number) => api<Awaited<ReturnType<AliasStore["list"]>>>("GET", undefined, offset),
-  create: (address: string, note: string) =>
-    api<Awaited<ReturnType<AliasStore["create"]>>>("POST", { address, note }),
+  create: (address: string, note: string, service_url: string) =>
+    api<Awaited<ReturnType<AliasStore["create"]>>>("POST", { address, note, service_url }),
   delete: (address: string) =>
     api<Awaited<ReturnType<AliasStore["delete"]>>>("DELETE", { address }),
   setDisabled: (address: string, disabled: boolean) =>
     api<Awaited<ReturnType<AliasStore["setDisabled"]>>>("PATCH", { address, disabled }),
-  updateNote: (address: string, note: string) =>
-    api<Awaited<ReturnType<AliasStore["updateNote"]>>>("PATCH", { address, note }),
+  updateDetails: (address: string, note: string, service_url: string) =>
+    api<Awaited<ReturnType<AliasStore["updateDetails"]>>>("PATCH", { address, note, service_url }),
 };

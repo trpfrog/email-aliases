@@ -1,4 +1,4 @@
-import { Badge, Button, Menu, Table, Text } from "@mantine/core";
+import { Anchor, Badge, Button, Menu, Table, Text } from "@mantine/core";
 import type { Alias } from "../../api/aliases";
 
 export function AliasRow({
@@ -6,13 +6,13 @@ export function AliasRow({
   saving,
   onDelete,
   onSetDisabled,
-  onEditNote,
+  onEditDetails,
 }: {
   alias: Alias;
   saving: boolean;
   onDelete: (alias: Alias) => void;
   onSetDisabled: (address: string, disabled: boolean) => void;
-  onEditNote: (alias: Alias) => void;
+  onEditDetails: (alias: Alias) => void;
 }) {
   return (
     <Table.Tr>
@@ -33,6 +33,20 @@ export function AliasRow({
         <Text size="sm" c="dimmed" lineClamp={2} title={alias.note}>
           {alias.note || "—"}
         </Text>
+        {alias.service_url && (
+          <Anchor
+            href={alias.service_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            size="xs"
+            display="block"
+            mt={4}
+            lineClamp={1}
+            title={alias.service_url}
+          >
+            {new URL(alias.service_url).hostname} ↗
+          </Anchor>
+        )}
       </Table.Td>
       <Table.Td visibleFrom="sm">
         <Text component="time" dateTime={alias.created_at} size="xs" c="dimmed" textWrap="nowrap">
@@ -57,7 +71,7 @@ export function AliasRow({
             </Button>
           </Menu.Target>
           <Menu.Dropdown>
-            <Menu.Item onClick={() => onEditNote(alias)}>メモを編集</Menu.Item>
+            <Menu.Item onClick={() => onEditDetails(alias)}>登録情報を編集</Menu.Item>
             <Menu.Item onClick={() => onSetDisabled(alias.address, alias.disabled_at === null)}>
               {alias.disabled_at !== null ? "有効化" : "無効化"}
             </Menu.Item>
