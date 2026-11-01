@@ -97,6 +97,11 @@ export default defineConfig({
       "test:integration": { command: "vp test run --project integration", cache: false },
     },
   },
+  server: {
+    // 本番用の平文の Secret を開発サーバーから配信しない。
+    // Cloudflare の Vite プラグインが .env や .dev.vars などの拒否リストを追加する。
+    fs: { deny: [".prod.vars", ".prod.vars.*"] },
+  },
   plugins: [
     {
       // index.html の %APP_*% を app.config.ts の値に置き換える。
