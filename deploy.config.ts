@@ -11,7 +11,7 @@ export const deploy = defineDeploy({
   // <workerName>.<サブドメイン>.workers.dev で公開される
   workerName: "email-aliases",
   // cf d1 create で作成した D1 の database ID
-  // d1DatabaseId: "",
+  d1DatabaseId: "82fe8d86-dce9-452a-b414-f6325a2c216b",
   // cf kv namespaces create で作成した OAuth 用 KV の namespace ID
-  // kvNamespaceId: "",
+  kvNamespaceId: "a316efbaf1514a24bcef147361f2e3cf",
 });
