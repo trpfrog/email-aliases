@@ -94,14 +94,17 @@ vp run build
    pnpm exec cf d1 migrations apply <database-id>
    ```
 
-4. `.prod.vars` に本番用の値を設定してデプロイする（値は Worker Secrets としてアップロードされる）。
-   公開 URL（`PUBLIC_ORIGIN`、末尾 `/` なし）もリポジトリに載せないよう、ここに置く。
+4. 本番用の値を [sops](https://github.com/getsops/sops) で暗号化した `secrets.prod.env` に置き、デプロイする（値は Worker Secrets としてアップロードされる）。
+   項目は `.prod.vars.example` のとおり。公開 URL（`PUBLIC_ORIGIN`、末尾 `/` なし）もリポジトリに平文で載せないよう、ここに置く。
    `FORWARD_TO` は Email Routing で確認済みのアドレスにする。
 
    ```sh
-   cp .prod.vars.example .prod.vars
-   vp run deploy --secrets-file .prod.vars
+   age-keygen -o ~/.config/sops/age/keys.txt   # 鍵がなければ作成し、公開鍵を .sops.yaml の age に設定する
+   sops edit secrets.prod.env                  # 作成・編集（リポジトリにある secrets.prod.env は作者の鍵用なので、先に削除する）
+   vp run deploy:prod
    ```
+
+   sops を使わない場合は、コミットされない平文の `.prod.vars` に書いて `vp run deploy --secrets-file .prod.vars` でデプロイする。
 
 5. ChatGPT から接続し、使用中のアドレスを **先に** `create_alias` で登録する。
 

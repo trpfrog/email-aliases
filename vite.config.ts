@@ -77,6 +77,13 @@ export default defineConfig({
         cache: { output: [".cloudflare/output/**"] },
       },
       deploy: { command: "cf deploy", dependsOn: ["db:prepare"], cache: false },
+      // sops で暗号化した secrets.prod.env を一時ファイルに復号し、Worker Secrets としてアップロードする。
+      "deploy:prod": {
+        command:
+          "sops exec-file --no-fifo --filename .prod.vars secrets.prod.env 'cf deploy --secrets-file {}'",
+        dependsOn: ["db:prepare"],
+        cache: false,
+      },
       "db:prepare": {
         command: "node scripts/prepare-db.ts",
         cache: {
