@@ -1,6 +1,6 @@
 /**
  * 自分の環境で使うときに編集する設定（デプロイ先は deploy.config.ts）
- * 転送先（FORWARD_TO）と管理者パスワード（ADMIN_PASSWORD）は秘密情報なので .dev.vars に置く
+ * 転送先（FORWARD_TO）と管理者パスワード（ADMIN_PASSWORD）は秘密情報なので .dev.vars.tpl と .prod.vars.tpl で扱う
  */
 import { defineApp } from "./src/app-config.ts";
 

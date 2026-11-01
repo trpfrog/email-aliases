@@ -1,5 +1,0 @@
-# sops で暗号化してコミットするファイルの規則
-# 自分の環境で使うときは age を自分の公開鍵に置き換える
-creation_rules:
-  - path_regex: (^|/)secrets\.prod\.env$
-    age: age1nlngjw2lqa9ea8au20vmnvhd3rg37hzk7r0qxg3a9snrx8shwcgqjtlfs2

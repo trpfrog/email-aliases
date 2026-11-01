@@ -4,8 +4,6 @@ node_modules/
 .reylo/
 dist/
 .dev.vars
-!.dev.vars.example
 .prod.vars
-!.prod.vars.example
 .env*
 !.env.example

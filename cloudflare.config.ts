@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => ({
         id: mode === "development" ? LOCAL_D1_ID : deploy.d1DatabaseId,
       }),
       OAUTH_KV: bindings.kv({ id: mode === "development" ? undefined : deploy.kvNamespaceId }),
-      // 本番の URL は公開リポジトリに載せないよう、Secret として .prod.vars から渡す
+      // 本番の URL は公開リポジトリに載せないよう、Secret として渡す（.prod.vars.tpl）
       PUBLIC_ORIGIN:
         mode === "development"
           ? // 結合テストは空いているポートで起動するため、開発時だけ上書きできる

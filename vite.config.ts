@@ -77,11 +77,15 @@ export default defineConfig({
         cache: { output: [".cloudflare/output/**"] },
       },
       deploy: { command: "cf deploy", dependsOn: ["db:prepare"], cache: false },
-      // sops で暗号化した secrets.prod.env を一時ファイルに復号し、Worker Secrets としてアップロードする
+      // 1Password の Production 保管庫の Secret と一緒にデプロイする
       "deploy:prod": {
-        command:
-          "sops exec-file --no-fifo --filename .prod.vars secrets.prod.env 'cf deploy --secrets-file {}'",
+        command: "node scripts/deploy-prod.ts",
         dependsOn: ["db:prepare"],
+        cache: false,
+      },
+      // 1Password の Development 保管庫から .dev.vars を作る
+      "secrets:dev": {
+        command: "op inject --force --in-file .dev.vars.tpl --out-file .dev.vars",
         cache: false,
       },
       "db:prepare": {
