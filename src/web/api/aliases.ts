@@ -14,6 +14,7 @@ const aliases = hc<AdminApi>("/", { init: { credentials: "same-origin" } }).api.
 
 export type CreateAliasRequest = InferRequestType<typeof aliases.$post>["json"];
 export type UpdateAliasRequest = InferRequestType<typeof aliases.$patch>["json"];
+export type UpdateDetailsRequest = Exclude<UpdateAliasRequest, { disabled: boolean }>;
 
 const errorBody = z.object({ data: z.object({ error: z.string() }) });
 

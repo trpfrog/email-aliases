@@ -13,7 +13,8 @@ const noStore = createMiddleware(async (c, next) => {
   c.header("Cache-Control", "no-store");
 });
 
-const protectedPage = [requireAdmin, noStore, secureHeaders({ xFrameOptions: "DENY" })] as const;
+// 認証エラーの応答にもヘッダーが付くよう、認証より先に置く。
+const protectedPage = [noStore, secureHeaders({ xFrameOptions: "DENY" }), requireAdmin] as const;
 
 /** OAuth と MCP 以外のすべての HTTP リクエスト（OAuthProvider の defaultHandler）。 */
 export const app = new Hono<{ Bindings: Env }>();

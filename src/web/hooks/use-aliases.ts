@@ -1,6 +1,11 @@
 import { useState } from "react";
 import useSWRImmutable from "swr/immutable";
-import { aliasApi, type Alias, type CreateAliasRequest } from "../api/aliases";
+import {
+  aliasApi,
+  type Alias,
+  type CreateAliasRequest,
+  type UpdateDetailsRequest,
+} from "../api/aliases";
 
 async function fetchAllAliases(): Promise<Alias[]> {
   const rows: Alias[] = [];
@@ -12,8 +17,6 @@ async function fetchAllAliases(): Promise<Alias[]> {
   }
   return rows;
 }
-
-export type AliasDetails = { address: string; note: string; service_url: string };
 
 /**
  * エイリアス一覧の取得と変更。
@@ -49,7 +52,7 @@ export function useAliases() {
       change(async () =>
         (await aliasApi.create(input)).created ? "追加しました" : "登録済みのアドレスです",
       ),
-    updateDetails: (input: AliasDetails) =>
+    updateDetails: (input: UpdateDetailsRequest) =>
       change(async () => {
         await aliasApi.update(input);
         return "登録情報を更新しました";

@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
+import type { CallToolResult, ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
+import type { z } from "zod";
 import type { AliasStore } from "../aliases/store";
 import {
   addressInput,
@@ -23,11 +24,24 @@ const idempotentWrite: ToolAnnotations = {
 };
 const idempotentDelete: ToolAnnotations = { ...idempotentWrite, destructiveHint: true };
 
-function structured(value: Record<string, unknown>) {
-  return {
-    content: [{ type: "text" as const, text: JSON.stringify(value) }],
-    structuredContent: value,
-  };
+/**
+ * ツールの結果を返す。`outputSchema` に渡したスキーマを受け取り、結果の型がそれに従うことを検査する。
+ * 入力の検証エラーは SDK が詳細を返す。store の失敗は内部の情報を含みうるため、ログに残して汎用のエラーを返す。
+ */
+async function respond<Output extends z.ZodObject>(
+  _outputSchema: Output,
+  result: Promise<z.output<Output>>,
+): Promise<CallToolResult> {
+  try {
+    const value: Record<string, unknown> = await result;
+    return { content: [{ type: "text", text: JSON.stringify(value) }], structuredContent: value };
+  } catch (error) {
+    console.error("MCP tool failed", error);
+    return {
+      isError: true,
+      content: [{ type: "text", text: "The alias database is unavailable. Try again later." }],
+    };
+  }
 }
 
 export function createMcpServer(aliases: AliasStore): McpServer {
@@ -41,7 +55,7 @@ export function createMcpServer(aliases: AliasStore): McpServer {
       outputSchema: createAliasResult,
       annotations: idempotentWrite,
     },
-    async (input) => structured(await aliases.create(input)),
+    (input) => respond(createAliasResult, aliases.create(input)),
   );
 
   server.registerTool(
@@ -53,7 +67,7 @@ export function createMcpServer(aliases: AliasStore): McpServer {
       outputSchema: listAliasesResult,
       annotations: readOnly,
     },
-    async (input) => structured(await aliases.list(input)),
+    (input) => respond(listAliasesResult, aliases.list(input)),
   );
 
   server.registerTool(
@@ -65,7 +79,7 @@ export function createMcpServer(aliases: AliasStore): McpServer {
       outputSchema: updateAliasResult,
       annotations: idempotentWrite,
     },
-    async (input) => structured(await aliases.setDisabled(input)),
+    (input) => respond(updateAliasResult, aliases.setDisabled(input)),
   );
 
   server.registerTool(
@@ -77,7 +91,7 @@ export function createMcpServer(aliases: AliasStore): McpServer {
       outputSchema: updateAliasResult,
       annotations: idempotentWrite,
     },
-    async (input) => structured(await aliases.updateDetails(input)),
+    (input) => respond(updateAliasResult, aliases.updateDetails(input)),
   );
 
   server.registerTool(
@@ -89,7 +103,7 @@ export function createMcpServer(aliases: AliasStore): McpServer {
       outputSchema: deleteAliasResult,
       annotations: idempotentDelete,
     },
-    async ({ address }) => structured(await aliases.delete(address)),
+    ({ address }) => respond(deleteAliasResult, aliases.delete(address)),
   );
 
   return server;

@@ -1,7 +1,7 @@
 import { insufficientScope, type OAuthResourceAuth } from "@cloudflare/workers-oauth-provider";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import type { AliasStore } from "../aliases/store";
-import { MANAGE_SCOPE } from "../config";
+import { MANAGE_SCOPE, MCP_PATH } from "../config";
 import { createMcpServer } from "./server";
 
 export type McpRequestContext = {
@@ -16,7 +16,11 @@ export async function handleMcpRequest(
   request: Request,
   { aliases, auth, publicOrigin }: McpRequestContext,
 ): Promise<Response> {
-  // トークン自体は OAuthProvider が検証済み。アプリの権限はここで確認する。
+  // OAuthProvider は /mcp 配下のすべてのパスを渡してくるため、エンドポイント以外は 404 にする。
+  if (new URL(request.url).pathname !== MCP_PATH) {
+    return Response.json({ error: "Not found" }, { status: 404 });
+  }
+  // OAuthProvider の requiredScopes は案内用で強制されないため、ここで権限を確認する。
   if (!auth.scope.includes(MANAGE_SCOPE)) return insufficientScope(auth, [MANAGE_SCOPE]);
 
   const origin = request.headers.get("Origin");

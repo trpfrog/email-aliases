@@ -1,5 +1,6 @@
 import { AuthorizationError, CimdFetchError } from "@cloudflare/workers-oauth-provider";
 import { Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 import { AUTHORIZE_PATH } from "../config";
 import type { Env } from "../env";
@@ -51,6 +52,8 @@ export const authorize = new Hono<{ Bindings: Env }>()
   );
 
 authorize.onError((error, c) => {
+  // 解釈できないフォームなど、Hono がリクエストを拒否した場合。
+  if (error instanceof HTTPException) return error.getResponse();
   if (error instanceof AuthorizationError && error.redirectTo !== undefined) {
     return c.redirect(error.redirectTo, 302);
   }

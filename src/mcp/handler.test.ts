@@ -47,10 +47,26 @@ const it = baseIt
   );
 
 const toolResponse = z.object({
-  result: z.object({ isError: z.boolean().optional(), structuredContent: z.unknown().optional() }),
+  result: z.object({
+    isError: z.boolean().optional(),
+    content: z.array(z.object({ text: z.string() })),
+    structuredContent: z.unknown().optional(),
+  }),
 });
 
 describe("MCP の HTTP ハンドラー", () => {
+  it("エンドポイント以外のパスは 404 にする", async ({ aliases }) => {
+    const response = await handleMcpRequest(
+      new Request(`${origin}/mcp/other`, { method: "POST" }),
+      {
+        aliases,
+        auth: { token: "token", audience: `${origin}/mcp`, scope: [MANAGE_SCOPE] },
+        publicOrigin: origin,
+      },
+    );
+    expect(response.status).toBe(404);
+  });
+
   it.for([[], ["offline_access"]])(
     "管理スコープのないトークン %j をデータにアクセスする前に拒否する",
     async (scope, { aliases, request }) => {
@@ -91,11 +107,13 @@ describe("MCP の HTTP ハンドラー", () => {
     },
   );
 
-  it("ストレージの処理に失敗した場合はツールエラーを返す", async ({ aliases, request }) => {
+  it("ストレージの失敗は内部の情報を含まないツールエラーにする", async ({ aliases, request }) => {
     aliases.list.mockRejectedValueOnce(new Error("storage unavailable"));
 
     const response = await request("tools/call", { name: "list_aliases", arguments: {} });
 
-    expect(toolResponse.parse(await response.json()).result.isError).toBe(true);
+    const { result } = toolResponse.parse(await response.json());
+    expect(result.isError).toBe(true);
+    expect(JSON.stringify(result.content)).not.toContain("storage unavailable");
   });
 });

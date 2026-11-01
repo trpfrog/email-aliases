@@ -71,6 +71,16 @@ describe("メールの受信", () => {
     await expect(receive("shop@mail.example.com")).rejects.toThrow(/no such table/);
   });
 
+  it("転送先の設定がなければ、未登録の宛先でもエラーにして誤設定に気付けるようにする", async ({
+    forward,
+    receive,
+  }) => {
+    await expect(receive("unknown@mail.example.com", { forwardTo: undefined })).rejects.toThrow(
+      /FORWARD_TO/,
+    );
+    expect(forward).not.toHaveBeenCalled();
+  });
+
   it.for([undefined, "", "  ", "other@mail.example.com", "Other@MAIL.trpfrog.net"])(
     "転送先 %j は設定の誤りとしてエラーにする",
     async (forwardTo, { aliases, forward, receive }) => {

@@ -1,4 +1,5 @@
-import { OAuthProvider, type OAuthResourceContext } from "@cloudflare/workers-oauth-provider";
+import { OAuthProvider } from "@cloudflare/workers-oauth-provider";
+import { z } from "zod";
 import { createAliasStore } from "./aliases/store";
 import { AUTHORIZE_PATH, MANAGE_SCOPE, MCP_PATH, OAUTH_SCOPES } from "./config";
 import { receiveEmail } from "./email/receive";
@@ -6,18 +7,17 @@ import type { Env } from "./env";
 import { app } from "./http/app";
 import { handleMcpRequest } from "./mcp/handler";
 
-// OAuthProvider はトークンを検証した後に ctx.auth を設定するが、apiHandler の型には現れないため実行時に確かめる。
-function isAuthenticated(ctx: ExecutionContext): ctx is OAuthResourceContext<unknown> {
-  return "auth" in ctx;
-}
+// OAuthProvider はトークンを検証した後に ctx.auth を設定するが、apiHandler の型には現れないため実行時に検証する。
+const authenticatedContext = z.object({
+  auth: z.object({ token: z.string(), audience: z.string(), scope: z.array(z.string()) }),
+});
 
 const mcp = {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
-    if (!isAuthenticated(ctx))
-      throw new Error("MCP request reached the handler without OAuth context");
+    const { auth } = authenticatedContext.parse(ctx);
     return await handleMcpRequest(request, {
       aliases: createAliasStore(env.DB),
-      auth: ctx.auth,
+      auth,
       publicOrigin: env.PUBLIC_ORIGIN,
     });
   },

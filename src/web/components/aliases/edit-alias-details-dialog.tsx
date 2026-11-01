@@ -1,7 +1,6 @@
 import { Button, Group, Stack, Text } from "@mantine/core";
 import type { SubmitEvent } from "react";
-import type { Alias } from "../../api/aliases";
-import type { AliasDetails } from "../../hooks/use-aliases";
+import type { Alias, UpdateDetailsRequest } from "../../api/aliases";
 import { useAsyncAction } from "../../hooks/use-async-action";
 import { readText } from "../../lib/form";
 import { ErrorAlert } from "../feedback/error-alert";
@@ -15,7 +14,7 @@ export function EditAliasDetailsDialog({
 }: {
   alias: Alias;
   onClose: () => void;
-  onSave: (details: AliasDetails) => Promise<void>;
+  onSave: (details: UpdateDetailsRequest) => Promise<void>;
 }) {
   const action = useAsyncAction(onSave);
 

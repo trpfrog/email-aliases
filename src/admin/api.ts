@@ -16,7 +16,7 @@ type AdminEnv = { Bindings: Env; Variables: { aliases: AliasStore } };
 
 // クエリ文字列は数字の文字列として受け取り、MCP と同じ範囲・既定値で検証する。
 const integerString = z.string().regex(/^\d+$/).transform(Number);
-const listAliasesQuery = z.strictObject({
+const listAliasesQuery = z.object({
   limit: integerString.optional().pipe(listAliasesInput.shape.limit),
   offset: integerString.optional().pipe(listAliasesInput.shape.offset),
 });
