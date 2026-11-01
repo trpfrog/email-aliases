@@ -5,12 +5,18 @@ import { AUTHORIZE_PATH, MANAGE_SCOPE, MCP_PATH, OAUTH_SCOPES } from "./config";
 import { receiveEmail } from "./email/receive";
 import { requirePublicOrigin, type Env } from "./env";
 import { app } from "./http/app";
+import { rateLimitByIp } from "./http/rate-limit";
 import { handleMcpRequest } from "./mcp/handler";
 
 // OAuthProvider はトークンを検証した後に ctx.auth を設定するが、apiHandler の型には現れないため実行時に検証する
 const authenticatedContext = z.object({
   auth: z.object({ token: z.string(), audience: z.string(), scope: z.array(z.string()) }),
 });
+
+const TOKEN_PATH = "/oauth/token";
+const REGISTER_PATH = "/oauth/register";
+// 認証なしで呼べ、KV への書き込みを伴うエンドポイント
+const RATE_LIMITED_OAUTH_PATHS = new Set([TOKEN_PATH, REGISTER_PATH]);
 
 const mcp = {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
@@ -24,15 +30,19 @@ const mcp = {
 } satisfies ExportedHandler<Env>;
 
 export default {
-  fetch(request, env, ctx) {
+  async fetch(request, env, ctx) {
+    if (RATE_LIMITED_OAUTH_PATHS.has(new URL(request.url).pathname)) {
+      const limited = await rateLimitByIp(env.OAUTH_RATE_LIMIT, request);
+      if (limited !== undefined) return limited;
+    }
     const publicOrigin = requirePublicOrigin(env);
     const provider = new OAuthProvider<Env>({
       apiRoute: MCP_PATH,
       apiHandler: mcp,
       defaultHandler: app,
       authorizeEndpoint: AUTHORIZE_PATH,
-      tokenEndpoint: "/oauth/token",
-      clientRegistrationEndpoint: "/oauth/register",
+      tokenEndpoint: TOKEN_PATH,
+      clientRegistrationEndpoint: REGISTER_PATH,
       clientIdMetadataDocumentEnabled: true,
       scopesSupported: OAUTH_SCOPES,
       requiredScopes: [MANAGE_SCOPE],
@@ -41,7 +51,7 @@ export default {
         authorization_servers: [publicOrigin],
       },
     });
-    return provider.fetch(request, env, ctx);
+    return await provider.fetch(request, env, ctx);
   },
 
   email(message, env) {

@@ -4,6 +4,10 @@ export interface Env {
   ASSETS: Fetcher;
   DB: D1Database;
   OAUTH_KV: KVNamespace;
+  /** 認証不要の OAuth のクライアント登録・トークン発行を制限する */
+  OAUTH_RATE_LIMIT: RateLimit;
+  /** 管理画面・管理 API・接続承認ページの Basic 認証への総当たりを制限する */
+  ADMIN_RATE_LIMIT: RateLimit;
   // Secret は未設定のまま起動できるため、存在を確認してから使う。
   // PUBLIC_ORIGIN は開発時は固定値、本番では URL を公開しないよう Secret にしている。
   PUBLIC_ORIGIN: string | undefined;

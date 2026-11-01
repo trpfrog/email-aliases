@@ -18,6 +18,16 @@ export default defineConfig(({ mode }) => ({
         id: mode === "development" ? LOCAL_D1_ID : deploy.d1DatabaseId,
       }),
       OAUTH_KV: bindings.kv({ id: mode === "development" ? undefined : deploy.kvNamespaceId }),
+      // 接続元 IP ごとの 60 秒あたりの上限。namespace はアカウント内で一意な整数
+      OAUTH_RATE_LIMIT: bindings.rateLimit({
+        namespace: "1001",
+        simple: { limit: 20, period: 60 },
+      }),
+      // 管理画面は一覧の読み込みや操作のたびに API を呼ぶため、余裕を持たせる
+      ADMIN_RATE_LIMIT: bindings.rateLimit({
+        namespace: "1002",
+        simple: { limit: 120, period: 60 },
+      }),
       // 本番の URL は公開リポジトリに載せないよう、Secret として渡す（.prod.vars.tpl）
       PUBLIC_ORIGIN:
         mode === "development"

@@ -1,4 +1,4 @@
-import { describe, expect } from "vite-plus/test";
+import { describe, expect, vi } from "vite-plus/test";
 import { z } from "zod";
 import { createAliasResult, listAliasesResult, updateAliasResult } from "../aliases/schema";
 import { dbTest } from "../test/fixtures";
@@ -10,8 +10,10 @@ const authorization = `Basic ${btoa(`admin:${password}`)}`;
 const errorBody = z.object({ error: z.string() });
 
 const it = dbTest
-  .extend("env", ({ db }) => ({
+  .extend("adminRateLimit", () => vi.fn<RateLimit["limit"]>().mockResolvedValue({ success: true }))
+  .extend("env", ({ db, adminRateLimit }) => ({
     DB: db,
+    ADMIN_RATE_LIMIT: { limit: adminRateLimit },
     PUBLIC_ORIGIN: origin,
     ADMIN_PASSWORD: password,
     ASSETS: { fetch: () => Promise.resolve(new Response("<!doctype html><title>SPA</title>")) },
@@ -56,6 +58,18 @@ describe("管理画面", () => {
       expect(response.headers.get("X-Frame-Options")).toBe("DENY");
     },
   );
+
+  it("制限を超えた接続元にはパスワードを照合せず 429 を返す", async ({
+    adminRateLimit,
+    request,
+  }) => {
+    adminRateLimit.mockResolvedValueOnce({ success: false });
+
+    const response = await request("/api/aliases");
+
+    expect(response.status).toBe(429);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+  });
 
   it("パスワードが未設定なら 503 を返す", async ({ env }) => {
     const response = await app.request(
