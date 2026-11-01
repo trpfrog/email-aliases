@@ -126,6 +126,33 @@ vp run build
 
 6. Email Routing でメールのドメインの Catch-all の転送先をこの Worker に変更する。切り替え後、D1 にない宛先はすべて drop される。
 
+## CI/CD（GitHub Actions）
+
+- **CI**（`.github/workflows/ci.yml`）：PR と main への push で、`vp run check`・`vp run test`・`vp run test:e2e` を実行する。
+- **Deploy**（`.github/workflows/deploy.yml`）：Actions タブの「Run workflow」から手動で実行する。main からのみ実行でき、次の順に進む。
+  1. check と単体テスト
+  2. 本番 D1 へのマイグレーション（`vp run db:migrate:prod`）
+  3. デプロイ（`vp run deploy:prod`）
+
+Action の依存は [ワークフローの lockfile](https://gh.io/actions-lockfile)（`.github/workflows/actions.lock`、public preview）でコミットに固定している。`uses:` はタグで書き、変更したら lockfile を作り直す。CI の `Verify actions.lock` が、lockfile とワークフローが一致しているかを検査する。Dependabot が Action を更新するときは、lockfile も同じ PR で更新される。
+
+```sh
+gh extension install github/gh-actions-lock
+gh actions-lock          # uses: を変えた後に実行する
+```
+
+ローカルの composite action は `uses: $/.github/actions/...` で参照する（`./` だと lockfile が中の依存を辿れないため）。
+
+Deploy ワークフローは、1Password の Service Account で本番の値を読む。初回だけ次を用意する。
+
+1. GitHub リポジトリに Environment `production` を作り、「Deployment branches and tags」で Branch の `main` だけを許可する。
+   ワークフローの `if:` は別のブランチで書き換えられるため、Secret を main 以外から読めないようにするにはこの設定が必須。承認者を設定すると、実行前に承認を求められる。
+2. 1Password で `Production` 保管庫を読み取り専用で参照できる Service Account を作り、Environment `production` の Secret `OP_SERVICE_ACCOUNT_TOKEN` に登録する。
+3. `Production` 保管庫にアイテム `email-aliases-deploy` を作り、次のフィールドを置く。
+   - `CLOUDFLARE_API_TOKEN`：Workers Scripts・D1・Workers KV Storage の編集権限を持つ API トークン
+   - `CLOUDFLARE_ACCOUNT_ID`：Cloudflare のアカウント ID
+4. Worker Secrets と `MAIL_DOMAIN` は、手元のデプロイと同じアイテム `email-aliases` から読む。
+
 ## ChatGPT から接続
 
 ChatGPT の MCP 接続で `https://<worker-origin>/mcp` を指定し、認証に OAuth を選ぶ。
