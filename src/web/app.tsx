@@ -1,4 +1,4 @@
-import { Box, Container, Stack } from "@mantine/core";
+import { Box, Container, Stack, Tabs } from "@mantine/core";
 import { useState } from "react";
 import type { Alias } from "./api/aliases";
 import { AliasDirectory } from "./components/aliases/alias-directory";
@@ -10,16 +10,18 @@ import { EditAliasDetailsDialog } from "./components/aliases/edit-alias-details-
 import { StatusNotification, type Notice } from "./components/feedback/status-notification";
 import { AppFooter } from "./components/layout/app-footer";
 import { AppHeader } from "./components/layout/app-header";
+import { ReceivedSection } from "./components/received/received-section";
 import { useAliases } from "./hooks/use-aliases";
 import { isDisabled } from "./lib/alias-display";
 import { errorMessage } from "./lib/error-message";
 
-type Dialog = { type: "create" } | { type: "edit" | "delete"; alias: Alias };
+type Dialog = { type: "create"; localPart: string } | { type: "edit" | "delete"; alias: Alias };
 
 export function App() {
   const aliases = useAliases();
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
+  const registered = new Set(aliases.aliases.map((alias) => alias.address.toLowerCase()));
 
   /** ダイアログの操作が成功したら閉じて通知する。失敗はダイアログ内に表示される。 */
   async function completeDialog(operation: Promise<string>) {
@@ -43,7 +45,7 @@ export function App() {
     toggleDisabled: (alias) =>
       void notifyResult(aliases.setDisabled(alias.address, !isDisabled(alias))),
   };
-  const openCreate = () => setDialog({ type: "create" });
+  const openCreate = (localPart = "") => setDialog({ type: "create", localPart });
   const closeDialog = () => setDialog(null);
 
   return (
@@ -54,23 +56,41 @@ export function App() {
           <AliasPageHeading
             loading={aliases.loading}
             count={aliases.aliases.length}
-            onCreate={openCreate}
+            onCreate={() => openCreate()}
           />
-          <AliasDirectory
-            aliases={aliases.aliases}
-            loading={aliases.loading}
-            busy={aliases.busy}
-            error={aliases.error}
-            onRefresh={() => void aliases.refresh()}
-            onCreate={openCreate}
-            actions={actions}
-          />
+          {/* 受信履歴はタブを開いたときだけ読み込む */}
+          <Tabs defaultValue="aliases" keepMounted={false}>
+            <Tabs.List mb="md">
+              <Tabs.Tab value="aliases">エイリアス</Tabs.Tab>
+              <Tabs.Tab value="received">受信履歴</Tabs.Tab>
+            </Tabs.List>
+            <Tabs.Panel value="aliases">
+              <AliasDirectory
+                aliases={aliases.aliases}
+                loading={aliases.loading}
+                busy={aliases.busy}
+                error={aliases.error}
+                onRefresh={() => void aliases.refresh()}
+                onCreate={() => openCreate()}
+                actions={actions}
+              />
+            </Tabs.Panel>
+            <Tabs.Panel value="received">
+              <ReceivedSection
+                registered={registered}
+                onRegister={openCreate}
+                notify={notifyResult}
+                onSuccess={(message) => setNotice({ tone: "success", message })}
+              />
+            </Tabs.Panel>
+          </Tabs>
           <AppFooter />
         </Stack>
       </Container>
       <StatusNotification notice={notice} onClose={() => setNotice(null)} />
       {dialog?.type === "create" && (
         <CreateAliasDialog
+          defaultLocalPart={dialog.localPart}
           onClose={closeDialog}
           onCreate={(input) => completeDialog(aliases.create(input))}
         />
