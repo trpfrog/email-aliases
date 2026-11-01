@@ -15,8 +15,8 @@ importers:
         specifier: ^1.2.4
         version: 1.2.4
       '@hono/standard-validator':
-        specifier: 0.4.0
-        version: 0.4.0(@standard-schema/spec@1.0.0)(hono@4.13.16)
+        specifier: 0.4.1
+        version: 0.4.1(@standard-schema/spec@1.1.0)(hono@4.13.16)
       '@mantine/core':
         specifier: ^9.7.4
         version: 9.7.4(@mantine/hooks@9.7.4(react@19.3.1))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -55,8 +55,8 @@ importers:
         specifier: 0.6.0
         version: 0.6.0
       '@standard-schema/spec':
-        specifier: 1.0.0
-        version: 1.0.0
+        specifier: 1.1.0
+        version: 1.1.0
       '@types/node':
         specifier: ^24.0.0
         version: 24.19.2
@@ -196,8 +196,8 @@ packages:
     peerDependencies:
       hono: ^4 || ^5.0.0-0
 
-  '@hono/standard-validator@0.4.0':
-    resolution: {integrity: sha512-MxOm1asDh9j7c1D0KiWwppSbFgAQxTRO4YEhjMrJn3lF1BIcXenPdgjSGKDRfQmZdaTaMA8slQLETgVOKyJxFw==}
+  '@hono/standard-validator@0.4.1':
+    resolution: {integrity: sha512-Q0+1dgMKAXEvsmJ5FNoamwnfrf/I5JNnKn7WzfynH8nJlNe1lNOW1+vlKpEQZbrBLEgmxIeys6HjRotDvZzq+A==}
     peerDependencies:
       '@standard-schema/spec': ^1.0.0
       hono: '>=4.11.2'
@@ -709,8 +709,8 @@ packages:
   '@speed-highlight/core@1.2.24':
     resolution: {integrity: sha512-qeW2e1l78afw8VhRPfPQ1Gjj+KU5XFQ/OFV5ti6eTa9bruO7mJyZtA4vw0ofqmA3tKCkROE9xLk3VZoeRc98nw==}
 
-  '@standard-schema/spec@1.0.0':
-    resolution: {integrity: sha512-m2bOd0f2RT9k8QJx1JN85cZYyH1RqFBdlwtkSlf4tBDYLCiiZnv1fIIwacK6cqwXavOydf0NPToMQgpKq+dVlA==}
+  '@standard-schema/spec@1.1.0':
+    resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
   '@swc/core-darwin-arm64@1.16.20':
     resolution: {integrity: sha512-i7NFSDnuE6tdBvBgmoVKKmburgcwZt/FZK2IusJaVGrjFrMUC1hrgE3RI+Kt9RhYM7vHvQj0W9j53zSxKEMbWQ==}
@@ -2217,9 +2217,9 @@ snapshots:
     dependencies:
       hono: 4.13.16
 
-  '@hono/standard-validator@0.4.0(@standard-schema/spec@1.0.0)(hono@4.13.16)':
+  '@hono/standard-validator@0.4.1(@standard-schema/spec@1.1.0)(hono@4.13.16)':
     dependencies:
-      '@standard-schema/spec': 1.0.0
+      '@standard-schema/spec': 1.1.0
       hono: 4.13.16
 
   '@img/colour@1.1.0': {}
@@ -2541,7 +2541,7 @@ snapshots:
 
   '@speed-highlight/core@1.2.24': {}
 
-  '@standard-schema/spec@1.0.0': {}
+  '@standard-schema/spec@1.1.0': {}
 
   '@swc/core-darwin-arm64@1.16.20':
     optional: true
