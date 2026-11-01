@@ -14,7 +14,8 @@ const OUTCOMES = {
  * 有効な登録済み宛先へのメールだけを固定の受信箱に転送し、受信履歴に記録する。
  * 無効・未登録の宛先は、転送も拒否もせずに破棄する（履歴には残す）。
  * 自ドメイン以外や形式が不正な宛先は、履歴にも残さない。
- * 設定・検索・転送・記録の失敗は握りつぶさず、Worker の失敗として呼び出し元に伝える。
+ * 設定・検索・転送の失敗は握りつぶさず、Worker の失敗として呼び出し元に伝える。
+ * 転送した後の記録の失敗だけは、再送による二重の転送を避けるためログに残して成功として扱う。
  */
 export async function receiveEmail(
   message: Pick<ForwardableEmailMessage, "from" | "to" | "rawSize" | "forward">,
@@ -33,14 +34,25 @@ export async function receiveEmail(
   if (!address.success) return;
 
   const outcome = OUTCOMES[await aliases.status(address.data)];
+  const record = () =>
+    received.record({
+      recipient: address.data,
+      sender: message.from,
+      size: message.rawSize,
+      outcome,
+    });
+  if (outcome !== "forwarded") {
+    await record();
+    return;
+  }
+
   // 転送に失敗したメールを転送済みとして記録しないよう、転送の後に記録する
-  if (outcome === "forwarded") await message.forward(destination);
-  await received.record({
-    recipient: address.data,
-    sender: message.from,
-    size: message.rawSize,
-    outcome,
-  });
+  await message.forward(destination);
+  try {
+    await record();
+  } catch (error) {
+    console.error("Failed to record a forwarded email", error);
+  }
 }
 
 function parseForwardTo(forwardTo: string | undefined): string {

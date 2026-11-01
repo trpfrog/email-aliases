@@ -1,4 +1,4 @@
-import { describe, expect, vi } from "vite-plus/test";
+import { describe, expect, onTestFinished, vi } from "vite-plus/test";
 import { createAliasStore } from "../aliases/store";
 import { createReceivedEmailStore } from "../received/store";
 import { address, dbTest, newAlias } from "../test/fixtures";
@@ -81,6 +81,25 @@ describe("メールの受信", () => {
     expect(await history()).toEqual([]);
   });
 
+  it("転送した後の記録の失敗は、再送で二重に転送されないよう成功として扱う", async ({
+    db,
+    aliases,
+    forward,
+    receive,
+  }) => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    onTestFinished(() => consoleError.mockRestore());
+    await aliases.create(newAlias({ address: "shop@mail.example.test" }));
+    db.exec("DROP TABLE received_emails");
+
+    await receive("shop@mail.example.test");
+    expect(forward).toHaveBeenCalledExactlyOnceWith("inbox@example.com");
+    expect(consoleError).toHaveBeenCalledWith(
+      "Failed to record a forwarded email",
+      expect.any(Error),
+    );
+  });
+
   it("プラスタグも含めて完全なアドレスで一致を判定する", async ({ aliases, forward, receive }) => {
     await aliases.create(newAlias({ address: "shop@mail.example.test" }));
 
@@ -107,7 +126,7 @@ describe("メールの受信", () => {
     await expect(receive("shop@mail.example.test")).rejects.toThrow("forward unavailable");
 
     db.exec("DROP TABLE received_emails");
-    await expect(receive("shop@mail.example.test")).rejects.toThrow(/no such table/);
+    await expect(receive("unknown@mail.example.test")).rejects.toThrow(/no such table/);
 
     db.exec("DROP TABLE aliases");
     await expect(receive("shop@mail.example.test")).rejects.toThrow(/no such table/);
