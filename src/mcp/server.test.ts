@@ -34,6 +34,11 @@ const it = dbTest
   });
 
 describe("MCP ツール", () => {
+  it("サーバーのバージョンにリリースのバージョンを返す", ({ client }) => {
+    // テストではリリースのタグを渡さないため、開発用の値になる
+    expect(client.getServerVersion()).toEqual({ name: "email-aliases", version: "0.0.0-dev" });
+  });
+
   it("公開するツールと注釈", async ({ client }) => {
     const { tools } = await client.listTools();
     expect(Object.fromEntries(tools.map((tool) => [tool.name, tool.annotations]))).toEqual({

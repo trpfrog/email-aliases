@@ -13,7 +13,7 @@ import {
   updateAliasDetailsInput,
   updateAliasResult,
 } from "../aliases/schema";
-import { MAIL_DOMAIN } from "../config";
+import { APP_VERSION, MAIL_DOMAIN } from "../config";
 import {
   clearReceivedEmailsInput,
   clearReceivedEmailsResult,
@@ -70,7 +70,7 @@ export function createMcpServer({
   received: ReceivedEmailStore;
 }): McpServer {
   const server = new McpServer(
-    { name: "email-aliases", version: "0.1.0" },
+    { name: "email-aliases", version: APP_VERSION },
     { maxToolInputElements: MAX_TOOL_INPUT_ELEMENTS },
   );
 
