@@ -1,6 +1,6 @@
 import type { AliasStore } from "../aliases/store";
 import { addressSchema } from "../aliases/schema";
-import { DOMAIN } from "../config";
+import { MAIL_DOMAIN } from "../config";
 
 /**
  * 有効な登録済み宛先へのメールだけを固定の受信箱に転送する。
@@ -21,7 +21,7 @@ export async function receiveEmail(
 function parseForwardTo(forwardTo: string | undefined): string {
   const destination = forwardTo?.trim() ?? "";
   if (destination === "") throw new Error("FORWARD_TO is not configured");
-  if (destination.toLowerCase().endsWith(`@${DOMAIN}`)) {
+  if (destination.toLowerCase().endsWith(`@${MAIL_DOMAIN}`)) {
     throw new Error("FORWARD_TO must be outside the alias domain to avoid forwarding loops");
   }
   return destination;

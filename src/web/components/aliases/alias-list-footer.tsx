@@ -1,5 +1,5 @@
 import { Group, Text } from "@mantine/core";
-import { DOMAIN } from "../../../config";
+import { MAIL_DOMAIN } from "../../../config";
 
 export function AliasListFooter({ loading, count }: { loading: boolean; count: number }) {
   return (
@@ -8,7 +8,7 @@ export function AliasListFooter({ loading, count }: { loading: boolean; count: n
         {loading ? "—" : `${count} 件`}
       </Text>
       <Text size="xs" c="dimmed">
-        {DOMAIN}
+        {MAIL_DOMAIN}
       </Text>
     </Group>
   );

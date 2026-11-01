@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { DOMAIN } from "../config";
+import { MAIL_DOMAIN } from "../config";
 
 /** 入力の上限。UI のフォームでも同じ値を使う。 */
 export const ALIAS_LIMITS = { localPart: 64, note: 1000, serviceUrl: 2048 } as const;
@@ -14,12 +14,12 @@ export const addressSchema = z
   .refine((address) => {
     const [local = "", domain, ...rest] = address.split("@");
     return (
-      domain === DOMAIN &&
+      domain === MAIL_DOMAIN &&
       rest.length === 0 &&
       local.length <= ALIAS_LIMITS.localPart &&
       LOCAL_PART.test(local)
     );
-  }, `Use an address at ${DOMAIN} (local part: 1–64 ASCII characters).`)
+  }, `Use an address at ${MAIL_DOMAIN} (local part: 1–64 ASCII characters).`)
   .brand<"AliasAddress">();
 
 export type AliasAddress = z.output<typeof addressSchema>;

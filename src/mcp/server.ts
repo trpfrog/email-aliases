@@ -13,7 +13,7 @@ import {
   updateAliasDetailsInput,
   updateAliasResult,
 } from "../aliases/schema";
-import { DOMAIN } from "../config";
+import { MAIL_DOMAIN } from "../config";
 
 const readOnly: ToolAnnotations = { readOnlyHint: true, openWorldHint: false };
 const idempotentWrite: ToolAnnotations = {
@@ -50,7 +50,7 @@ export function createMcpServer(aliases: AliasStore): McpServer {
   server.registerTool(
     "create_alias",
     {
-      description: `Allow an address at ${DOMAIN} to receive forwarded email, with an optional note and HTTP(S) service_url. Requires a full address including the domain. Creating an existing alias leaves its note, service URL, and disabled state unchanged.`,
+      description: `Allow an address at ${MAIL_DOMAIN} to receive forwarded email, with an optional note and HTTP(S) service_url. Requires a full address including the domain. Creating an existing alias leaves its note, service URL, and disabled state unchanged.`,
       inputSchema: createAliasInput,
       outputSchema: createAliasResult,
       annotations: idempotentWrite,

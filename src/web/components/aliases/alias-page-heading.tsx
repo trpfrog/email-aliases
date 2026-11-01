@@ -1,5 +1,5 @@
 import { Badge, Button, Group, Stack, Text, Title } from "@mantine/core";
-import { DOMAIN } from "../../../config";
+import { MAIL_DOMAIN } from "../../../config";
 
 export function AliasPageHeading({
   loading,
@@ -14,7 +14,7 @@ export function AliasPageHeading({
     <Group justify="space-between" align="flex-end">
       <Stack gap="xs">
         <Text size="sm" c="dimmed">
-          {DOMAIN}
+          {MAIL_DOMAIN}
         </Text>
         <Group gap="sm">
           <Title order={1} size="h2">

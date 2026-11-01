@@ -1,6 +1,6 @@
 import { Button, Group, Stack, Text, TextInput } from "@mantine/core";
 import type { SubmitEvent } from "react";
-import { DOMAIN } from "../../../config";
+import { MAIL_DOMAIN } from "../../../config";
 import { ALIAS_LIMITS, type CreateAliasRequest } from "../../api/aliases";
 import { useAsyncAction } from "../../hooks/use-async-action";
 import { readText } from "../../lib/form";
@@ -22,7 +22,7 @@ export function CreateAliasDialog({
     const form = new FormData(event.currentTarget);
     // UI では @ より前だけを入力し、ドメインを付けて送る。
     await action.run({
-      address: `${readText(form, "address").trim()}@${DOMAIN}`,
+      address: `${readText(form, "address").trim()}@${MAIL_DOMAIN}`,
       note: readText(form, DETAILS_FIELD.note),
       service_url: readText(form, DETAILS_FIELD.serviceUrl),
     });
@@ -39,7 +39,7 @@ export function CreateAliasDialog({
             description="@ より前の部分を入力してください"
             rightSection={
               <Text size="sm" c="dimmed" pr="sm">
-                @{DOMAIN}
+                @{MAIL_DOMAIN}
               </Text>
             }
             rightSectionWidth={170}
