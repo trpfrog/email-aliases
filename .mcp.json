@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "email-aliases-dev": {
+      "type": "http",
+      "url": "http://localhost:5173/mcp"
+    }
+  }
+}

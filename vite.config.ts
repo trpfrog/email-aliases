@@ -109,6 +109,9 @@ export default defineConfig({
     },
   },
   server: {
+    // 開発用の PUBLIC_ORIGIN と .mcp.json が 5173 を前提にしているため、別のポートへずらさない
+    port: 5173,
+    strictPort: true,
     // 本番用の平文の Secret を開発サーバーから配信しない。
     // Cloudflare の Vite プラグインが .env や .dev.vars などの拒否リストを追加する。
     fs: { deny: [".prod.vars", ".prod.vars.*"] },
