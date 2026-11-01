@@ -5,6 +5,7 @@ import reylo from "reylo/vite";
 import react from "@vitejs/plugin-react-swc";
 import { LOCAL_D1_ID } from "./cloudflare.config";
 import { app } from "./app.config.ts";
+import { deploy } from "./deploy.config.ts";
 
 /** 本番のドメインをリポジトリに載せないよう、ビルド時の環境変数で app.config.ts の値を上書きできる */
 const envMailDomain = process.env.MAIL_DOMAIN?.trim() ?? "";
@@ -99,6 +100,11 @@ export default defineConfig({
           input: ["scripts/prepare-db.ts", "migrations/*.sql"],
           output: [".reylo/schema.sqlite"],
         },
+      },
+      // 本番の D1 に適用する。GitHub Actions の Deploy ワークフローが実行する
+      "db:migrate:prod": {
+        command: `cf d1 migrations apply ${deploy.d1DatabaseId}`,
+        cache: false,
       },
       "db:migrate:local": {
         command: `cf d1 migrations apply ${LOCAL_D1_ID} --local --persist-to .cloudflare/state --mode development`,
