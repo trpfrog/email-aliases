@@ -4,7 +4,7 @@
   "type": "module",
   "dependencies": {
     "@cloudflare/workers-oauth-provider": "^1.2.4",
-    "@hono/standard-validator": "0.4.0",
+    "@hono/standard-validator": "0.4.1",
     "@mantine/core": "^9.7.4",
     "@mantine/hooks": "^9.7.4",
     "@modelcontextprotocol/sdk": "^1.32.2",
@@ -19,7 +19,7 @@
     "@cloudflare/vite-plugin": "2.0.0-beta.v.6",
     "@cloudflare/workers-types": "^5.20261029.1",
     "@reylosql/sqlite": "0.6.0",
-    "@standard-schema/spec": "1.0.0",
+    "@standard-schema/spec": "1.1.0",
     "@types/node": "^24.0.0",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
