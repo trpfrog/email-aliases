@@ -70,7 +70,7 @@ export function createMcpServer({
   received: ReceivedEmailStore;
 }): McpServer {
   const server = new McpServer(
-    { name: "email-aliases", version: "0.1.0" },
+    { name: "email-aliases", version: "0.2.0" },
     { maxToolInputElements: MAX_TOOL_INPUT_ELEMENTS },
   );
 
