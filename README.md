@@ -64,7 +64,7 @@ vp run dev                       # http://localhost:5173（ユーザー名 admin
 ```sh
 vp run check            # フォーマット・Lint・型検査
 vp run test             # 単体テスト
-vp run test:integration # cf dev を起動する結合テスト
+vp run test:e2e         # cf dev を起動する E2E テスト
 vp run build
 ```
 

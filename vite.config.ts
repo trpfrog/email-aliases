@@ -49,7 +49,7 @@ export default defineConfig({
     overrides: [
       {
         // `expect.any()` などの非対称マッチャーが any を返すため、テストでは代入だけ許可する
-        files: ["**/*.test.ts", "**/*.test.tsx"],
+        files: ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts"],
         rules: { "typescript/no-unsafe-assignment": "off" },
       },
       {
@@ -101,7 +101,7 @@ export default defineConfig({
         dependsOn: ["db:prepare"],
       },
       test: { command: "vp test run --project unit", dependsOn: ["db:prepare"] },
-      "test:integration": { command: "vp test run --project integration", cache: false },
+      "test:e2e": { command: "vp test run --project e2e", cache: false },
     },
   },
   server: {
@@ -153,7 +153,6 @@ export default defineConfig({
           name: "unit",
           setupFiles: ["src/test/setup.ts"],
           include: ["src/**/*.test.ts"],
-          exclude: ["src/**/*.integration.test.ts"],
           alias: {
             "cloudflare:workers": join(import.meta.dirname, "src/test/cloudflare-workers.ts"),
           },
@@ -163,8 +162,9 @@ export default defineConfig({
       {
         extends: true,
         test: {
-          name: "integration",
-          include: ["src/**/*.integration.test.ts"],
+          name: "e2e",
+          include: ["src/**/*.spec.ts"],
+          globalSetup: ["src/test/e2e/global-setup.ts"],
           testTimeout: 30000,
         },
       },

@@ -9,7 +9,7 @@
 ```sh
 vp run check            # フォーマット・Lint・型検査（変更後は必ず通す）
 vp run test             # 単体テスト（型は検査しない）
-vp run test:integration # cf dev を起動する結合テスト
+vp run test:e2e         # cf dev を起動する E2E テスト
 ```
 
 Cloudflare の操作には `wrangler` ではなく `cf` CLI を使う。
@@ -46,7 +46,7 @@ flowchart TD
 
 ## テスト
 
-- テストは実装の隣に置く。結合テストは `*.integration.test.ts`、型テストは `*.test-d.ts`。
+- テストは実装の隣に置く。単体テストは `*.test.ts`、cf dev を起動する E2E テストは `*.spec.ts`（共通の起動処理は `src/test/e2e/`）、型テストは `*.test-d.ts`。
 - API は `vite-plus/test` から明示的に import する。
 - DB・MCP 接続・モックは `test.extend` の fixture でテストごとに作り、解放は `onCleanup` に登録する。fixture を使うパラメーター化テストは `test.for` を使う。
 - 非同期の assertion は必ず `await` する。待機は固定 sleep ではなく `vi.waitUntil` を使う。
