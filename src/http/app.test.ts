@@ -1,7 +1,13 @@
 import { describe, expect, vi } from "vite-plus/test";
 import { z } from "zod";
 import { createAliasResult, listAliasesResult, updateAliasResult } from "../aliases/schema";
-import { dbTest } from "../test/fixtures";
+import {
+  clearReceivedEmailsResult,
+  deleteReceivedEmailResult,
+  listReceivedEmailsResult,
+} from "../received/schema";
+import { createReceivedEmailStore } from "../received/store";
+import { address as aliasAddress, dbTest } from "../test/fixtures";
 import { app } from "./app";
 
 const origin = "https://aliases.example";
@@ -163,6 +169,37 @@ describe("管理 API", () => {
     expect(listAliasesResult.parse(await (await request("/api/aliases")).json()).aliases).toEqual(
       [],
     );
+  });
+
+  it("受信履歴を絞り込んで一覧し、個別・一括で削除する", async ({ db, api, request }) => {
+    const received = createReceivedEmailStore(db);
+    for (const outcome of ["forwarded", "disabled", "unknown"] as const) {
+      await received.record({
+        recipient: aliasAddress(address),
+        sender: "sender@example.com",
+        size: 1,
+        outcome,
+      });
+    }
+    const list = async (query: string) =>
+      listReceivedEmailsResult.parse(await (await request(`/api/received${query}`)).json()).emails;
+
+    expect((await list("?filter=dropped")).map((email) => email.outcome)).toEqual([
+      "unknown",
+      "disabled",
+    ]);
+    expect(await list("?limit=1")).toHaveLength(1);
+    expect((await request("/api/received?filter=spam")).status).toBe(400);
+
+    const [unknown] = await list("?filter=unknown");
+    const deleted = await api("DELETE", { id: unknown?.id }, { path: "/api/received" });
+    expect(deleteReceivedEmailResult.parse(await deleted.json()).deleted).toBe(true);
+
+    const clear = (body: unknown) => api("POST", body, { path: "/api/received/clear" });
+    expect((await clear({})).status).toBe(400);
+    const cleared = await clear({ filter: "dropped" });
+    expect(clearReceivedEmailsResult.parse(await cleared.json())).toEqual({ deleted: 1 });
+    expect((await list("")).map((email) => email.outcome)).toEqual(["forwarded"]);
   });
 
   it("DB の失敗は内部の情報を含まない 500 にする", async ({ db, request }) => {

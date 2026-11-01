@@ -7,6 +7,7 @@ import {
   updateAliasResult,
 } from "../aliases/schema";
 import { MAIL_DOMAIN } from "../config";
+import { clearReceivedEmailsResult, listReceivedEmailsResult } from "../received/schema";
 import { base, basic, request } from "../test/e2e/server";
 import type { AdminApi } from "./api";
 
@@ -88,5 +89,20 @@ describe("React 管理画面と API", () => {
       await (await aliases.$delete({ json: { address } })).json(),
     );
     expect(deleted.deleted).toBe(true);
+  });
+
+  test("D1 上で受信履歴を一覧し、絞り込んで削除できる", async () => {
+    const received = hc<AdminApi>(base, {
+      headers: { Authorization: basic, Origin: base },
+    }).api.received;
+
+    const list = await received.$get({ query: { filter: "dropped" } });
+    expect(list.status).toBe(200);
+    expect(listReceivedEmailsResult.parse(await list.json()).next_offset).toBeNull();
+
+    const cleared = await received.clear.$post({ json: { filter: "unknown" } });
+    expect(cleared.status).toBe(200);
+    expect(clearReceivedEmailsResult.parse(await cleared.json()).deleted).toBe(0);
+    expect((await received.$delete({ json: { id: 1 } })).status).toBe(200);
   });
 });
