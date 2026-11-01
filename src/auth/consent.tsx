@@ -1,7 +1,18 @@
 import type { ConsentDescription } from "@cloudflare/workers-oauth-provider";
+import type { JSX } from "hono/jsx/jsx-runtime";
 import { DOMAIN } from "../config";
 
-export function ConsentPage({ details, handle }: { details: ConsentDescription; handle: string }) {
+/** 接続承認ページを HTML 文書として描画する。 */
+export async function renderConsentPage(props: {
+  details: ConsentDescription;
+  handle: string;
+}): Promise<string> {
+  // hono/jsx の要素は非同期コンポーネントを含む場合 Promise になる。
+  const page: JSX.Element = <ConsentPage {...props} />;
+  return `<!doctype html>${await page}`;
+}
+
+function ConsentPage({ details, handle }: { details: ConsentDescription; handle: string }) {
   return (
     <html lang="ja">
       <head>

@@ -14,12 +14,9 @@ importers:
       '@cloudflare/workers-oauth-provider':
         specifier: ^1.2.4
         version: 1.2.4
-      '@hono/mcp':
-        specifier: ^0.3.5
-        version: 0.3.5(@modelcontextprotocol/sdk@1.32.2(zod@4.6.7))(hono-rate-limiter@0.5.4(hono@4.13.14))(hono@4.13.14)(zod@4.6.7)
-      '@hono/zod-validator':
-        specifier: ^0.9.1
-        version: 0.9.1(hono@4.13.14)(zod@4.6.7)
+      '@hono/standard-validator':
+        specifier: 0.4.0
+        version: 0.4.0(@standard-schema/spec@1.0.0)(hono@4.13.14)
       '@mantine/core':
         specifier: ^9.7.4
         version: 9.7.4(@mantine/hooks@9.7.4(react@19.3.1))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -57,6 +54,9 @@ importers:
       '@reylosql/sqlite':
         specifier: 0.6.0
         version: 0.6.0
+      '@standard-schema/spec':
+        specifier: 1.0.0
+        version: 1.0.0
       '@types/node':
         specifier: ^24.0.0
         version: 24.19.2
@@ -190,25 +190,17 @@ packages:
   '@floating-ui/utils@0.2.12':
     resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
 
-  '@hono/mcp@0.3.5':
-    resolution: {integrity: sha512-CquYSjbl9BuprbMMjvgO2owK7kdEA9wh2CJqAjn1Zk2QAM24y2OBSv5gz5O8jHCp39ae4dgIxOSonEVR+2PpJQ==}
-    peerDependencies:
-      '@modelcontextprotocol/sdk': ^1.29.0
-      hono: '*'
-      hono-rate-limiter: ^0.5.4
-      zod: ^3.25.0 || ^4.0.0
-
   '@hono/node-server@2.1.5':
     resolution: {integrity: sha512-MgP/I06GdvsilDspMk/qmRzpk8LOUStP6jFAbSRi40W09DhoyUn+Mj7eyKICPqeYKybOjVFLVIAQzvu1bfIa7Q==}
     engines: {node: '>=20'}
     peerDependencies:
       hono: ^4 || ^5.0.0-0
 
-  '@hono/zod-validator@0.9.1':
-    resolution: {integrity: sha512-iiv6w0qrIc0arfvCtUqBWsvl4fXjzaTcQcCJTTtCnkawF9HHGE+KjEl0ox3gQJ6rKZEgE3mLExlQCF72M+mNuw==}
+  '@hono/standard-validator@0.4.0':
+    resolution: {integrity: sha512-MxOm1asDh9j7c1D0KiWwppSbFgAQxTRO4YEhjMrJn3lF1BIcXenPdgjSGKDRfQmZdaTaMA8slQLETgVOKyJxFw==}
     peerDependencies:
+      '@standard-schema/spec': ^1.0.0
       hono: '>=4.11.2'
-      zod: ^3.25.0 || ^4.0.0
 
   '@img/colour@1.1.0':
     resolution: {integrity: sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ==}
@@ -716,6 +708,9 @@ packages:
 
   '@speed-highlight/core@1.2.24':
     resolution: {integrity: sha512-qeW2e1l78afw8VhRPfPQ1Gjj+KU5XFQ/OFV5ti6eTa9bruO7mJyZtA4vw0ofqmA3tKCkROE9xLk3VZoeRc98nw==}
+
+  '@standard-schema/spec@1.0.0':
+    resolution: {integrity: sha512-m2bOd0f2RT9k8QJx1JN85cZYyH1RqFBdlwtkSlf4tBDYLCiiZnv1fIIwacK6cqwXavOydf0NPToMQgpKq+dVlA==}
 
   '@swc/core-darwin-arm64@1.16.20':
     resolution: {integrity: sha512-i7NFSDnuE6tdBvBgmoVKKmburgcwZt/FZK2IusJaVGrjFrMUC1hrgE3RI+Kt9RhYM7vHvQj0W9j53zSxKEMbWQ==}
@@ -1455,15 +1450,6 @@ packages:
   hasown@2.0.4:
     resolution: {integrity: sha512-T2UbfbBEF32wiepXIsMlTW9+dDYC6wMh/t/vYA4tuOMKqWz/n3vr1NFSxQiyP+zk2mXsoMA/i/7qV6LKut1t1A==}
     engines: {node: '>= 0.4'}
-
-  hono-rate-limiter@0.5.4:
-    resolution: {integrity: sha512-P3/cscAmz1hA+MuM+Hn9gP/EyO2zWv2aXIFkVYuLZkPzrPa4oaWdVCS94vyDlsNBgeMnE/Hr2+LznIKQxrF0ng==}
-    peerDependencies:
-      hono: ^4.10.8
-      unstorage: ^1.17.3
-    peerDependenciesMeta:
-      unstorage:
-        optional: true
 
   hono@4.13.14:
     resolution: {integrity: sha512-yhRLQ21U6qa9Hsu2N7Qcbh8tE+WKEcoErjIo56LeSGiGXGp9sA7UpE86Ui9uexb61KakiGwuHMn2QdV7w6i6kQ==}
@@ -2227,22 +2213,14 @@ snapshots:
 
   '@floating-ui/utils@0.2.12': {}
 
-  '@hono/mcp@0.3.5(@modelcontextprotocol/sdk@1.32.2(zod@4.6.7))(hono-rate-limiter@0.5.4(hono@4.13.14))(hono@4.13.14)(zod@4.6.7)':
-    dependencies:
-      '@modelcontextprotocol/sdk': 1.32.2(zod@4.6.7)
-      hono: 4.13.14
-      hono-rate-limiter: 0.5.4(hono@4.13.14)
-      pkce-challenge: 5.0.1
-      zod: 4.6.7
-
   '@hono/node-server@2.1.5(hono@4.13.14)':
     dependencies:
       hono: 4.13.14
 
-  '@hono/zod-validator@0.9.1(hono@4.13.14)(zod@4.6.7)':
+  '@hono/standard-validator@0.4.0(@standard-schema/spec@1.0.0)(hono@4.13.14)':
     dependencies:
+      '@standard-schema/spec': 1.0.0
       hono: 4.13.14
-      zod: 4.6.7
 
   '@img/colour@1.1.0': {}
 
@@ -2562,6 +2540,8 @@ snapshots:
   '@sindresorhus/is@7.2.0': {}
 
   '@speed-highlight/core@1.2.24': {}
+
+  '@standard-schema/spec@1.0.0': {}
 
   '@swc/core-darwin-arm64@1.16.20':
     optional: true
@@ -3131,10 +3111,6 @@ snapshots:
   hasown@2.0.4:
     dependencies:
       function-bind: 1.1.2
-
-  hono-rate-limiter@0.5.4(hono@4.13.14):
-    dependencies:
-      hono: 4.13.14
 
   hono@4.13.14: {}
 

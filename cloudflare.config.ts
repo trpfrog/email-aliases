@@ -17,7 +17,8 @@ export default defineConfig(({ mode }) => ({
       OAUTH_KV: bindings.kv({}),
       PUBLIC_ORIGIN: bindings.text(
         mode === "development"
-          ? "http://localhost:5173"
+          ? // 結合テストは空いているポートで起動するため、開発時だけ上書きできる。
+            (process.env.DEV_PUBLIC_ORIGIN ?? "http://localhost:5173")
           : "https://email-aliases.YOUR_SUBDOMAIN.workers.dev",
       ),
       ADMIN_PASSWORD: bindings.secret(),

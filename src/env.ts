@@ -5,7 +5,9 @@ export interface Env {
   DB: D1Database;
   OAUTH_KV: KVNamespace;
   PUBLIC_ORIGIN: string;
-  ADMIN_PASSWORD: string;
-  FORWARD_TO: string;
+  // Secret は未設定のまま起動できるため、存在を確認してから使う。
+  ADMIN_PASSWORD: string | undefined;
+  FORWARD_TO: string | undefined;
+  // OAuthProvider が defaultHandler の呼び出し前に設定する。
   OAUTH_PROVIDER: OAuthHelpers;
 }

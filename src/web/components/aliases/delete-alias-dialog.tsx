@@ -1,37 +1,25 @@
-import { Alert, Button, Group, Modal, Paper, Stack, Text } from "@mantine/core";
+import { Button, Group, Paper, Stack, Text } from "@mantine/core";
 import type { Alias } from "../../api/aliases";
+import { useAsyncAction } from "../../hooks/use-async-action";
+import { ErrorAlert } from "../feedback/error-alert";
+import { AliasModal } from "./alias-modal";
 
 export function DeleteAliasDialog({
   alias,
-  saving,
-  error,
   onClose,
   onDelete,
 }: {
   alias: Alias;
-  saving: boolean;
-  error: string;
   onClose: () => void;
-  onDelete: (address: string) => Promise<boolean>;
+  onDelete: (address: string) => Promise<void>;
 }) {
-  async function remove() {
-    if (await onDelete(alias.address)) onClose();
-  }
+  const action = useAsyncAction(onDelete);
+
   return (
-    <Modal
-      opened
-      onClose={onClose}
-      title="エイリアスを削除"
-      centered
-      padding="xl"
-      closeOnClickOutside={!saving}
-      closeOnEscape={!saving}
-      withCloseButton={!saving}
-      closeButtonProps={{ "aria-label": "閉じる" }}
-    >
+    <AliasModal title="エイリアスを削除" busy={action.pending} onClose={onClose}>
       <Stack gap="lg">
         <Paper withBorder p="md" bg="gray.0">
-          <Text size="sm" textWrap="wrap">
+          <Text size="sm" style={{ overflowWrap: "anywhere" }}>
             {alias.address}
           </Text>
         </Paper>
@@ -39,20 +27,20 @@ export function DeleteAliasDialog({
           登録情報とメモを完全に削除します。削除後、この宛先へのメールは転送されません。
           情報を残して転送を止めたい場合は、無効化してください。
         </Text>
-        {error && (
-          <Alert color="red" role="alert">
-            {error}
-          </Alert>
-        )}
+        <ErrorAlert message={action.error} />
         <Group justify="flex-end">
-          <Button variant="default" disabled={saving} onClick={onClose} data-autofocus>
+          <Button variant="default" disabled={action.pending} onClick={onClose} data-autofocus>
             キャンセル
           </Button>
-          <Button color="red" loading={saving} onClick={() => void remove()}>
+          <Button
+            color="red"
+            loading={action.pending}
+            onClick={() => void action.run(alias.address)}
+          >
             削除
           </Button>
         </Group>
       </Stack>
-    </Modal>
+    </AliasModal>
   );
 }

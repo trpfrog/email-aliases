@@ -1,19 +1,16 @@
 import { Table, VisuallyHidden } from "@mantine/core";
 import type { Alias } from "../../api/aliases";
+import type { AliasActions } from "./alias-actions";
 import { AliasRow } from "./alias-row";
 
 export function AliasTable({
   aliases,
-  onDelete,
-  saving,
-  onSetDisabled,
-  onEditDetails,
+  busy,
+  actions,
 }: {
   aliases: Alias[];
-  onDelete: (alias: Alias) => void;
-  saving: boolean;
-  onSetDisabled: (address: string, disabled: boolean) => void;
-  onEditDetails: (alias: Alias) => void;
+  busy: boolean;
+  actions: AliasActions;
 }) {
   return (
     <Table.ScrollContainer minWidth={480} type="native">
@@ -30,14 +27,7 @@ export function AliasTable({
         </Table.Thead>
         <Table.Tbody>
           {aliases.map((alias) => (
-            <AliasRow
-              key={alias.address}
-              alias={alias}
-              saving={saving}
-              onDelete={onDelete}
-              onSetDisabled={onSetDisabled}
-              onEditDetails={onEditDetails}
-            />
+            <AliasRow key={alias.address} alias={alias} busy={busy} actions={actions} />
           ))}
         </Table.Tbody>
       </Table>

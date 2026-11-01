@@ -1,37 +1,35 @@
+import { Button, Group, Stack, Text, TextInput } from "@mantine/core";
 import type { SubmitEvent } from "react";
-import { Alert, Button, Group, Modal, Stack, Text, Textarea, TextInput } from "@mantine/core";
 import { DOMAIN } from "../../../config";
+import type { CreateAliasRequest } from "../../api/aliases";
+import { useAsyncAction } from "../../hooks/use-async-action";
+import { readText } from "../../lib/form";
+import { ErrorAlert } from "../feedback/error-alert";
+import { AliasDetailsFields, DETAILS_FIELD } from "./alias-details-fields";
+import { AliasModal } from "./alias-modal";
 
 export function CreateAliasDialog({
-  saving,
-  error,
   onClose,
   onCreate,
 }: {
-  saving: boolean;
-  error: string;
   onClose: () => void;
-  onCreate: (address: string, note: string, serviceUrl: string) => Promise<boolean>;
+  onCreate: (input: CreateAliasRequest) => Promise<void>;
 }) {
+  const action = useAsyncAction(onCreate);
+
   async function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    const address = `${String(data.get("address")).trim()}@${DOMAIN}`;
-    if (await onCreate(address, String(data.get("note")), String(data.get("service_url"))))
-      onClose();
+    const form = new FormData(event.currentTarget);
+    // UI では @ より前だけを入力し、ドメインを付けて送る。
+    await action.run({
+      address: `${readText(form, "address").trim()}@${DOMAIN}`,
+      note: readText(form, DETAILS_FIELD.note),
+      service_url: readText(form, DETAILS_FIELD.serviceUrl),
+    });
   }
+
   return (
-    <Modal
-      opened
-      onClose={onClose}
-      title="エイリアスを追加"
-      centered
-      padding="xl"
-      closeOnClickOutside={!saving}
-      closeOnEscape={!saving}
-      withCloseButton={!saving}
-      closeButtonProps={{ "aria-label": "閉じる" }}
-    >
+    <AliasModal title="エイリアスを追加" busy={action.pending} onClose={onClose}>
       <form onSubmit={(event) => void submit(event)}>
         <Stack gap="lg">
           <TextInput
@@ -51,44 +49,21 @@ export function CreateAliasDialog({
             autoCapitalize="none"
             spellCheck={false}
             autoComplete="off"
-            disabled={saving}
+            disabled={action.pending}
             data-autofocus
           />
-          <TextInput
-            label="サービス URL（任意）"
-            name="service_url"
-            type="url"
-            placeholder="https://example.com/settings"
-            maxLength={2048}
-            autoCapitalize="none"
-            autoComplete="off"
-            spellCheck={false}
-            disabled={saving}
-          />
-          <Textarea
-            label="メモ（任意）"
-            name="note"
-            placeholder="用途・サービス名"
-            maxLength={1000}
-            minRows={3}
-            autosize
-            disabled={saving}
-          />
-          {error && (
-            <Alert color="red" role="alert">
-              {error}
-            </Alert>
-          )}
+          <AliasDetailsFields disabled={action.pending} />
+          <ErrorAlert message={action.error} />
           <Group justify="flex-end" mt="sm">
-            <Button variant="default" disabled={saving} onClick={onClose}>
+            <Button variant="default" disabled={action.pending} onClick={onClose}>
               キャンセル
             </Button>
-            <Button type="submit" loading={saving}>
+            <Button type="submit" loading={action.pending}>
               追加
             </Button>
           </Group>
         </Stack>
       </form>
-    </Modal>
+    </AliasModal>
   );
 }

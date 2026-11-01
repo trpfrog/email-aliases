@@ -1,9 +1,71 @@
+import { join } from "node:path";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import { defineConfig } from "vite-plus";
 import reylo from "reylo/vite";
 import react from "@vitejs/plugin-react-swc";
 
 export default defineConfig({
+  lint: {
+    plugins: ["typescript", "unicorn", "oxc", "react", "import", "vitest"],
+    categories: { correctness: "error", suspicious: "error" },
+    options: { typeAware: true },
+    rules: {
+      // 型安全を崩す書き方を禁止する。`as const` は許可される。
+      "typescript/no-explicit-any": "error",
+      "typescript/no-non-null-assertion": "error",
+      "typescript/consistent-type-assertions": ["error", { assertionStyle: "never" }],
+      "typescript/no-unsafe-argument": "error",
+      "typescript/no-unsafe-assignment": "error",
+      "typescript/no-unsafe-call": "error",
+      "typescript/no-unsafe-member-access": "error",
+      "typescript/no-unsafe-return": "error",
+      "typescript/no-unsafe-type-assertion": "error",
+      "typescript/no-unnecessary-type-assertion": "error",
+      "typescript/no-unnecessary-condition": "error",
+      "typescript/strict-boolean-expressions": "error",
+      "typescript/switch-exhaustiveness-check": "error",
+      "typescript/restrict-template-expressions": "error",
+      "typescript/use-unknown-in-catch-callback-variable": "error",
+      "typescript/only-throw-error": "error",
+      "typescript/no-floating-promises": "error",
+      "typescript/no-misused-promises": "error",
+      "typescript/await-thenable": "error",
+      "typescript/return-await": ["error", "always"],
+      "typescript/prefer-nullish-coalescing": "error",
+      "typescript/consistent-type-imports": "error",
+      // 自動 JSX ランタイム（React・hono/jsx）では不要。
+      "react/react-in-jsx-scope": "off",
+      "import/no-unassigned-import": ["error", { allow: ["**/*.css"] }],
+      // `it.extend` で作った fixture 付きの `it` も test ブロックとして扱う。
+      // 失敗時の説明を第 2 引数で渡せるようにする。
+      "vitest/valid-expect": ["error", { maxArgs: 2 }],
+      "vitest/no-standalone-expect": [
+        "error",
+        { additionalTestBlockFunctions: ["it", "it.for", "it.each"] },
+      ],
+    },
+    overrides: [
+      {
+        // `expect.any()` などの非対称マッチャーが any を返すため、テストでは代入だけ許可する。
+        files: ["**/*.test.ts", "**/*.test.tsx"],
+        rules: { "typescript/no-unsafe-assignment": "off" },
+      },
+      {
+        // Reylo の SQL の型は tsc の content mapper でしか解決できず、tsgolint からは error 型に見える。
+        // store.ts が外向きの型を明示し、store.test-d.ts が tsc で推論結果との一致を検査する。
+        files: ["src/aliases/store.ts", "src/aliases/store.test-d.ts"],
+        rules: {
+          "typescript/no-unsafe-argument": "off",
+          "typescript/no-unsafe-assignment": "off",
+          "typescript/no-unsafe-call": "off",
+          "typescript/no-unsafe-member-access": "off",
+          "typescript/no-unsafe-return": "off",
+          "typescript/no-unnecessary-condition": "off",
+          "typescript/strict-boolean-expressions": "off",
+        },
+      },
+    ],
+  },
   run: {
     tasks: {
       dev: { command: "cf dev", dependsOn: ["db:prepare"], cache: false },
@@ -14,9 +76,9 @@ export default defineConfig({
       },
       deploy: { command: "cf deploy", dependsOn: ["db:prepare"], cache: false },
       "db:prepare": {
-        command: "node scripts/prepare-db.mjs",
+        command: "node scripts/prepare-db.ts",
         cache: {
-          input: ["scripts/prepare-db.mjs", "migrations/*.sql"],
+          input: ["scripts/prepare-db.ts", "migrations/*.sql"],
           output: [".reylo/schema.sqlite"],
         },
       },
@@ -43,7 +105,10 @@ export default defineConfig({
           ? { syntax: "typescript", tsx: id.endsWith(".tsx") }
           : undefined,
       useAtYourOwnRisk_mutateSwcOptions(options) {
-        options.jsc!.transform!.reactCompiler = true;
+        options.jsc = {
+          ...options.jsc,
+          transform: { ...options.jsc?.transform, reactCompiler: true },
+        };
       },
     }).map((plugin) => ({
       ...plugin,
@@ -57,19 +122,27 @@ export default defineConfig({
           }
         : {}),
     })),
-    ...(process.env.VITEST ? [] : [cloudflare()]),
+    ...(process.env.VITEST === undefined ? [cloudflare()] : []),
   ],
   test: {
     projects: [
       {
         extends: true,
-        test: { name: "unit", include: ["src/**/*.test.ts"] },
+        test: {
+          name: "unit",
+          include: ["src/**/*.test.ts"],
+          exclude: ["src/**/*.integration.test.ts"],
+          alias: {
+            "cloudflare:workers": join(import.meta.dirname, "src/test/cloudflare-workers.ts"),
+          },
+          server: { deps: { inline: ["@cloudflare/workers-oauth-provider"] } },
+        },
       },
       {
         extends: true,
         test: {
           name: "integration",
-          include: ["src/**/*.test.mjs"],
+          include: ["src/**/*.integration.test.ts"],
           testTimeout: 30000,
         },
       },

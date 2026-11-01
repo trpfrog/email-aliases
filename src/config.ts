@@ -1,4 +1,5 @@
 export const DOMAIN = "mail.example.com";
+export const ADMIN_USERNAME = "admin";
 export const MCP_PATH = "/mcp";
 export const AUTHORIZE_PATH = "/authorize";
 export const MANAGE_SCOPE = "aliases:manage";

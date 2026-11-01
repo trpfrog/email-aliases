@@ -1,80 +1,59 @@
-import { Alert, Center, Divider, Loader, Paper } from "@mantine/core";
+import { Center, Divider, Loader, Paper } from "@mantine/core";
 import { useState } from "react";
 import type { Alias } from "../../api/aliases";
-import { AliasToolbar, type AliasStatus } from "./alias-toolbar";
-import { AliasTable } from "./alias-table";
+import { filterAliases, type AliasStatus } from "../../lib/alias-display";
+import { ErrorAlert } from "../feedback/error-alert";
+import type { AliasActions } from "./alias-actions";
 import { AliasEmptyState } from "./alias-empty-state";
 import { AliasListFooter } from "./alias-list-footer";
-
-type Props = {
-  aliases: Alias[];
-  loading: boolean;
-  saving: boolean;
-  error: string;
-  onRefresh: () => void;
-  onCreate: () => void;
-  onDelete: (alias: Alias) => void;
-  onSetDisabled: (address: string, disabled: boolean) => void;
-  onEditDetails: (alias: Alias) => void;
-};
+import { AliasTable } from "./alias-table";
+import { AliasToolbar } from "./alias-toolbar";
 
 export function AliasDirectory({
   aliases,
   loading,
-  saving,
+  busy,
   error,
   onRefresh,
   onCreate,
-  onDelete,
-  onSetDisabled,
-  onEditDetails,
-}: Props) {
-  const [search, setSearch] = useState("");
+  actions,
+}: {
+  aliases: Alias[];
+  loading: boolean;
+  busy: boolean;
+  error: string;
+  onRefresh: () => void;
+  onCreate: () => void;
+  actions: AliasActions;
+}) {
+  const [query, setQuery] = useState("");
   const [status, setStatus] = useState<AliasStatus>("enabled");
-  const filtered = aliases.filter(
-    (alias) =>
-      (status === "all" || (alias.disabled_at !== null) === (status === "disabled")) &&
-      `${alias.address} ${alias.note} ${alias.service_url}`
-        .toLowerCase()
-        .includes(search.toLowerCase().trim()),
-  );
+  const visible = filterAliases(aliases, { status, query });
+
   return (
     <Paper component="section" withBorder shadow="xs" aria-label="エイリアス一覧">
       <AliasToolbar
-        search={search}
-        onSearch={setSearch}
-        disabled={loading || saving}
-        onRefresh={onRefresh}
+        query={query}
+        onQueryChange={setQuery}
         status={status}
         onStatusChange={setStatus}
+        refreshDisabled={loading || busy}
+        onRefresh={onRefresh}
       />
       <Divider />
-      {error && (
-        <Alert color="red" role="alert" m="md">
-          {error}
-        </Alert>
-      )}
-      <AliasTable
-        aliases={filtered}
-        saving={saving || loading}
-        onDelete={onDelete}
-        onSetDisabled={onSetDisabled}
-        onEditDetails={onEditDetails}
-      />
+      <ErrorAlert message={error} m="md" />
+      <AliasTable aliases={visible} busy={loading || busy} actions={actions} />
       {loading ? (
         <Center py={64} role="status" aria-label="読み込み中">
           <Loader size="sm" />
         </Center>
       ) : (
-        filtered.length === 0 && (
-          <AliasEmptyState
-            searching={Boolean(search.trim()) || aliases.length > 0 || status === "disabled"}
-            onCreate={onCreate}
-          />
+        visible.length === 0 && (
+          <AliasEmptyState filtered={aliases.length > 0} onCreate={onCreate} />
         )
       )}
       <Divider />
-      <AliasListFooter loading={loading} count={filtered.length} />
+      <AliasListFooter loading={loading} count={visible.length} />
     </Paper>
   );
 }

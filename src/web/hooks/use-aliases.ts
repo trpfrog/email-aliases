@@ -1,84 +1,66 @@
 import { useState } from "react";
 import useSWRImmutable from "swr/immutable";
-import { aliasApi, type Alias } from "../api/aliases";
+import { aliasApi, type Alias, type CreateAliasRequest } from "../api/aliases";
 
-async function fetchAliases() {
+async function fetchAllAliases(): Promise<Alias[]> {
   const rows: Alias[] = [];
   let offset: number | null = 0;
-  do {
+  while (offset !== null) {
     const page = await aliasApi.list(offset);
     rows.push(...page.aliases);
     offset = page.next_offset;
-  } while (offset !== null);
+  }
   return rows;
 }
 
+export type AliasDetails = { address: string; note: string; service_url: string };
+
+/**
+ * エイリアス一覧の取得と変更。
+ * 変更系の操作は成功時に通知用のメッセージを返し、失敗時は表示用のメッセージを持つ Error を投げる。
+ */
 export function useAliases() {
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-  const {
-    data: aliases = [],
-    isLoading,
-    isValidating,
-    mutate: revalidate,
-  } = useSWRImmutable("/api/aliases", fetchAliases, {
-    shouldRetryOnError: false,
-    onSuccess: () => setError(""),
-    onError: (err: unknown) =>
-      setError(err instanceof Error ? err.message : "読み込みに失敗しました。"),
-  });
+  const { data, error, isLoading, isValidating, mutate } = useSWRImmutable<Alias[], Error>(
+    "/api/aliases",
+    fetchAllAliases,
+    { shouldRetryOnError: false },
+  );
+  const [pendingCount, setPendingCount] = useState(0);
 
-  async function refresh() {
-    setError("");
+  async function change(operation: () => Promise<string>): Promise<string> {
+    setPendingCount((count) => count + 1);
     try {
-      await revalidate();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "読み込みに失敗しました。");
-    }
-  }
-
-  async function mutate(operation: () => Promise<string>) {
-    setSaving(true);
-    setError("");
-    try {
-      setNotice(await operation());
-      await refresh();
-      return true;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "操作に失敗しました。");
-      return false;
+      const message = await operation();
+      await mutate();
+      return message;
     } finally {
-      setSaving(false);
+      setPendingCount((count) => count - 1);
     }
   }
 
   return {
-    aliases,
+    aliases: data ?? [],
+    error: error?.message ?? "",
     loading: isLoading || isValidating,
-    saving,
-    error,
-    notice,
-    refresh,
-    clearError: () => setError(""),
-    clearNotice: () => setNotice(""),
-    create: (address: string, note: string, serviceUrl: string) =>
-      mutate(async () => {
-        const result = await aliasApi.create(address, note, serviceUrl);
-        return result.created ? "追加しました" : "登録済みのアドレスです";
-      }),
-    updateDetails: (address: string, note: string, serviceUrl: string) =>
-      mutate(async () => {
-        await aliasApi.updateDetails(address, note, serviceUrl);
+    busy: pendingCount > 0,
+    refresh: () => mutate(),
+
+    create: (input: CreateAliasRequest) =>
+      change(async () =>
+        (await aliasApi.create(input)).created ? "追加しました" : "登録済みのアドレスです",
+      ),
+    updateDetails: (input: AliasDetails) =>
+      change(async () => {
+        await aliasApi.update(input);
         return "登録情報を更新しました";
       }),
     setDisabled: (address: string, disabled: boolean) =>
-      mutate(async () => {
-        await aliasApi.setDisabled(address, disabled);
+      change(async () => {
+        await aliasApi.update({ address, disabled });
         return disabled ? "無効化しました" : "有効化しました";
       }),
     remove: (address: string) =>
-      mutate(async () => {
+      change(async () => {
         await aliasApi.delete(address);
         return "削除しました";
       }),

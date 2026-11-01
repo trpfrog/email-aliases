@@ -1,0 +1,101 @@
+import type { OAuthResourceAuth } from "@cloudflare/workers-oauth-provider";
+import { describe, expect, it as baseIt, vi } from "vite-plus/test";
+import { z } from "zod";
+import type { AliasStore } from "../aliases/store";
+import { MANAGE_SCOPE } from "../config";
+import { handleMcpRequest } from "./handler";
+
+const origin = "https://aliases.example";
+
+const it = baseIt
+  .extend("aliases", () => ({
+    isEnabled: vi.fn<AliasStore["isEnabled"]>().mockResolvedValue(false),
+    create: vi.fn<AliasStore["create"]>(),
+    list: vi.fn<AliasStore["list"]>().mockResolvedValue({ aliases: [], next_offset: null }),
+    setDisabled: vi.fn<AliasStore["setDisabled"]>(),
+    updateDetails: vi.fn<AliasStore["updateDetails"]>(),
+    delete: vi.fn<AliasStore["delete"]>(),
+  }))
+  .extend(
+    "request",
+    ({ aliases }) =>
+      (
+        method: string,
+        params: Record<string, unknown> = {},
+        options: { scope?: string[]; origin?: string } = {},
+      ) => {
+        const auth: OAuthResourceAuth = {
+          token: "token",
+          audience: `${origin}/mcp`,
+          scope: options.scope ?? [MANAGE_SCOPE],
+        };
+        const headers = new Headers({
+          "Content-Type": "application/json",
+          Accept: "application/json, text/event-stream",
+        });
+        if (options.origin !== undefined) headers.set("Origin", options.origin);
+
+        return handleMcpRequest(
+          new Request(`${origin}/mcp`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+          }),
+          { aliases, auth, publicOrigin: origin },
+        );
+      },
+  );
+
+const toolResponse = z.object({
+  result: z.object({ isError: z.boolean().optional(), structuredContent: z.unknown().optional() }),
+});
+
+describe("MCP の HTTP ハンドラー", () => {
+  it.for([[], ["offline_access"]])(
+    "管理スコープのないトークン %j をデータにアクセスする前に拒否する",
+    async (scope, { aliases, request }) => {
+      const response = await request("tools/list", {}, { scope });
+
+      expect(response.status).toBe(403);
+      expect(response.headers.get("WWW-Authenticate")).toContain("insufficient_scope");
+      expect(aliases.list).not.toHaveBeenCalled();
+    },
+  );
+
+  it("異なる Origin をツールの実行前に拒否する", async ({ aliases, request }) => {
+    const response = await request(
+      "tools/call",
+      { name: "list_aliases", arguments: {} },
+      { origin: "https://other.example" },
+    );
+
+    expect(response.status).toBe(403);
+    expect(aliases.list).not.toHaveBeenCalled();
+  });
+
+  it.for([undefined, origin])(
+    "Origin が %j の認可済みリクエストを受け付ける",
+    async (requestOrigin, { aliases, request }) => {
+      const response = await request(
+        "tools/call",
+        { name: "list_aliases", arguments: {} },
+        { origin: requestOrigin },
+      );
+
+      expect(response.status).toBe(200);
+      expect(toolResponse.parse(await response.json()).result.structuredContent).toEqual({
+        aliases: [],
+        next_offset: null,
+      });
+      expect(aliases.list).toHaveBeenCalledExactlyOnceWith({ limit: 100, offset: 0 });
+    },
+  );
+
+  it("ストレージの処理に失敗した場合はツールエラーを返す", async ({ aliases, request }) => {
+    aliases.list.mockRejectedValueOnce(new Error("storage unavailable"));
+
+    const response = await request("tools/call", { name: "list_aliases", arguments: {} });
+
+    expect(toolResponse.parse(await response.json()).result.isError).toBe(true);
+  });
+});

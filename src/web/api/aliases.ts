@@ -1,33 +1,45 @@
-import { hc, parseResponse, type InferResponseType } from "hono/client";
-import type { AdminApi } from "../../admin/routes";
+import {
+  DetailedError,
+  hc,
+  parseResponse,
+  type ClientResponse,
+  type InferRequestType,
+} from "hono/client";
+import { z } from "zod";
+import type { AdminApi } from "../../admin/api";
 
-const client = hc<AdminApi>("/", {
-  init: { credentials: "same-origin" },
-  fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
-    const response = await fetch(input, init);
-    if (!response.ok) {
-      if (response.status === 401)
-        throw new Error("認証の有効期限が切れました。ページを再読み込みしてください。");
-      const data = await response.json().catch(() => ({}));
-      const message =
-        data && typeof data === "object" && "error" in data && typeof data.error === "string"
-          ? data.error
-          : "読み込みに失敗しました。";
-      throw new Error(message);
+export type { Alias } from "../../aliases/schema";
+
+const aliases = hc<AdminApi>("/", { init: { credentials: "same-origin" } }).api.aliases;
+
+export type CreateAliasRequest = InferRequestType<typeof aliases.$post>["json"];
+export type UpdateAliasRequest = InferRequestType<typeof aliases.$patch>["json"];
+
+const errorBody = z.object({ data: z.object({ error: z.string() }) });
+
+/** API のエラーを、画面にそのまま表示できるメッセージの Error に変換する。 */
+function toDisplayError(error: unknown): Error {
+  if (error instanceof DetailedError) {
+    if (error.statusCode === 401) {
+      return new Error("認証の有効期限が切れました。ページを再読み込みしてください。");
     }
-    return response;
-  },
-}).api.aliases;
+    const body = errorBody.safeParse(error.detail);
+    if (body.success) return new Error(body.data.data.error);
+  }
+  return new Error("通信に失敗しました。再度お試しください。", { cause: error });
+}
 
-export type Alias = InferResponseType<typeof client.$get, 200>["aliases"][number];
+async function request<T extends ClientResponse<unknown>>(response: Promise<T>) {
+  try {
+    return await parseResponse(response);
+  } catch (error) {
+    throw toDisplayError(error);
+  }
+}
 
 export const aliasApi = {
-  list: (offset: number) => parseResponse(client.$get({ query: { offset: String(offset) } })),
-  create: (address: string, note: string, service_url: string) =>
-    parseResponse(client.$post({ json: { address, note, service_url } })),
-  delete: (address: string) => parseResponse(client.$delete({ json: { address } })),
-  setDisabled: (address: string, disabled: boolean) =>
-    parseResponse(client.$patch({ json: { address, disabled } })),
-  updateDetails: (address: string, note: string, service_url: string) =>
-    parseResponse(client.$patch({ json: { address, note, service_url } })),
+  list: (offset: number) => request(aliases.$get({ query: { offset: String(offset) } })),
+  create: (json: CreateAliasRequest) => request(aliases.$post({ json })),
+  update: (json: UpdateAliasRequest) => request(aliases.$patch({ json })),
+  delete: (address: string) => request(aliases.$delete({ json: { address } })),
 };

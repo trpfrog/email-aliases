@@ -1,29 +1,52 @@
-import { AppHeader } from "./components/layout/app-header";
-import { AppFooter } from "./components/layout/app-footer";
-import { AliasPageHeading } from "./components/aliases/alias-page-heading";
-import { StatusNotification } from "./components/feedback/status-notification";
-import { useState } from "react";
 import { Box, Container, Stack } from "@mantine/core";
+import { useState } from "react";
 import type { Alias } from "./api/aliases";
-import { useAliases } from "./hooks/use-aliases";
+import type { AliasActions } from "./components/aliases/alias-actions";
 import { AliasDirectory } from "./components/aliases/alias-directory";
+import { AliasPageHeading } from "./components/aliases/alias-page-heading";
 import { CreateAliasDialog } from "./components/aliases/create-alias-dialog";
 import { DeleteAliasDialog } from "./components/aliases/delete-alias-dialog";
 import { EditAliasDetailsDialog } from "./components/aliases/edit-alias-details-dialog";
+import { StatusNotification, type Notice } from "./components/feedback/status-notification";
+import { AppFooter } from "./components/layout/app-footer";
+import { AppHeader } from "./components/layout/app-header";
+import { useAliases } from "./hooks/use-aliases";
+import { isDisabled } from "./lib/alias-display";
 
-type Dialog = { type: "create" } | { type: "delete" | "editDetails"; alias: Alias };
+type Dialog = { type: "create" } | { type: "edit" | "delete"; alias: Alias };
 
 export function App() {
   const aliases = useAliases();
   const [dialog, setDialog] = useState<Dialog | null>(null);
-  function openDialog(value: Dialog) {
-    aliases.clearError();
-    setDialog(value);
-  }
-  function closeDialog() {
-    aliases.clearError();
+  const [notice, setNotice] = useState<Notice | null>(null);
+
+  /** ダイアログの操作が成功したら閉じて通知する。失敗はダイアログ内に表示される。 */
+  async function completeDialog(operation: Promise<string>) {
+    const message = await operation;
     setDialog(null);
+    setNotice({ tone: "success", message });
   }
+
+  /** ダイアログを伴わない操作は、成否を通知で知らせる。 */
+  async function notifyResult(operation: Promise<string>) {
+    try {
+      setNotice({ tone: "success", message: await operation });
+    } catch (error) {
+      setNotice({
+        tone: "error",
+        message: error instanceof Error ? error.message : "操作に失敗しました。",
+      });
+    }
+  }
+
+  const actions: AliasActions = {
+    edit: (alias) => setDialog({ type: "edit", alias }),
+    remove: (alias) => setDialog({ type: "delete", alias }),
+    toggleDisabled: (alias) =>
+      void notifyResult(aliases.setDisabled(alias.address, !isDisabled(alias))),
+  };
+  const openCreate = () => setDialog({ type: "create" });
+  const closeDialog = () => setDialog(null);
 
   return (
     <Box bg="gray.0" mih="100dvh">
@@ -33,47 +56,39 @@ export function App() {
           <AliasPageHeading
             loading={aliases.loading}
             count={aliases.aliases.length}
-            onCreate={() => openDialog({ type: "create" })}
+            onCreate={openCreate}
           />
           <AliasDirectory
             aliases={aliases.aliases}
             loading={aliases.loading}
-            saving={aliases.saving}
-            error={dialog ? "" : aliases.error}
+            busy={aliases.busy}
+            error={aliases.error}
             onRefresh={() => void aliases.refresh()}
-            onCreate={() => openDialog({ type: "create" })}
-            onDelete={(alias) => openDialog({ type: "delete", alias })}
-            onEditDetails={(alias) => openDialog({ type: "editDetails", alias })}
-            onSetDisabled={(address, disabled) => void aliases.setDisabled(address, disabled)}
+            onCreate={openCreate}
+            actions={actions}
           />
           <AppFooter />
         </Stack>
       </Container>
-      <StatusNotification message={aliases.notice} onClose={aliases.clearNotice} />
+      <StatusNotification notice={notice} onClose={() => setNotice(null)} />
       {dialog?.type === "create" && (
         <CreateAliasDialog
-          saving={aliases.saving}
-          error={aliases.error}
           onClose={closeDialog}
-          onCreate={aliases.create}
+          onCreate={(input) => completeDialog(aliases.create(input))}
         />
       )}
-      {dialog?.type === "editDetails" && (
+      {dialog?.type === "edit" && (
         <EditAliasDetailsDialog
           alias={dialog.alias}
-          saving={aliases.saving}
-          error={aliases.error}
           onClose={closeDialog}
-          onSave={aliases.updateDetails}
+          onSave={(details) => completeDialog(aliases.updateDetails(details))}
         />
       )}
       {dialog?.type === "delete" && (
         <DeleteAliasDialog
           alias={dialog.alias}
-          saving={aliases.saving}
-          error={aliases.error}
           onClose={closeDialog}
-          onDelete={aliases.remove}
+          onDelete={(address) => completeDialog(aliases.remove(address))}
         />
       )}
     </Box>
