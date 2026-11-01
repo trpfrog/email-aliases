@@ -129,10 +129,19 @@ vp run build
 ## CI/CD（GitHub Actions）
 
 - **CI**（`.github/workflows/ci.yml`）：PR と main への push で、`vp run check`・`vp run test`・`vp run test:e2e` を実行する。
-- **Deploy**（`.github/workflows/deploy.yml`）：Actions タブの「Run workflow」から手動で実行する。main からのみ実行でき、次の順に進む。
-  1. check と単体テスト
-  2. 本番 D1 へのマイグレーション（`vp run db:migrate:prod`）
-  3. デプロイ（`vp run deploy:prod`）
+- **Deploy**（`.github/workflows/deploy.yml`）：GitHub Release を公開すると、そのタグを本番にデプロイする。次の順に進む。
+  1. タグ（`v1.2.3` の形）のコミットが main に含まれているかを確認する
+  2. check と単体テスト
+  3. 本番 D1 へのマイグレーション（`vp run db:migrate:prod`）
+  4. デプロイ（`vp run deploy:prod`）
+
+### リリースの手順
+
+1. GitHub の Releases で「Draft a new release」を開き、main に対して新しいタグ（例：`v0.2.0`）を作る。
+2. 「Generate release notes」でリリースノートを作り、公開する。公開すると Deploy ワークフローが動く。
+
+タグの `v` を除いた値（`0.2.0`）がビルド時の環境変数 `APP_VERSION` になり、MCP の `serverInfo.version`・管理画面のフッター・Cloudflare の Worker のバージョンのタグ（`v0.2.0`）に入る。タグを付けずにビルドした場合は `0.0.0-dev`。
+同じバージョンを再デプロイするときは、Actions タブの Deploy で「Run workflow」を開き、タグを選んで実行する。
 
 Action の依存は [ワークフローの lockfile](https://gh.io/actions-lockfile)（`.github/workflows/actions.lock`、public preview）でコミットに固定している。`uses:` はタグで書き、変更したら lockfile を作り直す。CI の `Verify actions.lock` が、lockfile とワークフローが一致しているかを検査する。Dependabot が Action を更新するときは、lockfile も同じ PR で更新される。
 
@@ -145,8 +154,9 @@ gh actions-lock          # uses: を変えた後に実行する
 
 Deploy ワークフローは、1Password の Service Account で本番の値を読む。初回だけ次を用意する。
 
-1. GitHub リポジトリに Environment `production` を作り、「Deployment branches and tags」で Branch の `main` だけを許可する。
-   ワークフローの `if:` は別のブランチで書き換えられるため、Secret を main 以外から読めないようにするにはこの設定が必須。承認者を設定すると、実行前に承認を求められる。
+1. GitHub リポジトリに Environment `production` を作り、「Deployment branches and tags」で Tag の `v*` だけを許可する。
+   ワークフローの `if:` は書き換えられるため、Secret をリリースのタグ以外から読めないようにするにはこの設定が必須。承認者を設定すると、実行前に承認を求められる。
+   あわせてリポジトリのルールセットで、`v*` のタグを作成・更新・削除できる人を管理者に限る。
 2. 1Password で `Production` 保管庫を読み取り専用で参照できる Service Account を作り、Environment `production` の Secret `OP_SERVICE_ACCOUNT_TOKEN` に登録する。
 3. `Production` 保管庫にアイテム `email-aliases-deploy` を作り、次のフィールドを置く。
    - `CLOUDFLARE_API_TOKEN`：Workers Scripts・D1・Workers KV Storage の編集権限を持つ API トークン
