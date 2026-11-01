@@ -1,7 +1,6 @@
 import { Table, VisuallyHidden } from "@mantine/core";
 import type { Alias } from "../../api/aliases";
-import type { AliasActions } from "./alias-actions";
-import { AliasRow } from "./alias-row";
+import { AliasRow, type AliasActions } from "./alias-row";
 
 export function AliasTable({
   aliases,

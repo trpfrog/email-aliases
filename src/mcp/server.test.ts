@@ -1,6 +1,6 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { describe, expect, it as baseIt } from "vite-plus/test";
+import { describe, expect } from "vite-plus/test";
 import {
   createAliasResult,
   deleteAliasResult,
@@ -8,26 +8,22 @@ import {
   updateAliasResult,
 } from "../aliases/schema";
 import { createAliasStore } from "../aliases/store";
-import { createMigratedDatabase } from "../test/database";
+import { dbTest } from "../test/fixtures";
 import { createMcpServer } from "./server";
 
-const it = baseIt
-  // eslint-disable-next-line no-empty-pattern -- Vitest がフィクスチャーの依存関係を検出するには分割代入が必要。
-  .extend("client", async ({}, { onCleanup }) => {
-    const db = createMigratedDatabase();
-    const server = createMcpServer(createAliasStore(db));
-    const client = new Client({ name: "test", version: "1.0.0" });
-    onCleanup(async () => {
-      await client.close();
-      await server.close();
-      db.close();
-    });
-
-    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-    await server.connect(serverTransport);
-    await client.connect(clientTransport);
-    return client;
+const it = dbTest.extend("client", async ({ db }, { onCleanup }) => {
+  const server = createMcpServer(createAliasStore(db));
+  const client = new Client({ name: "test", version: "1.0.0" });
+  onCleanup(async () => {
+    await client.close();
+    await server.close();
   });
+
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  await server.connect(serverTransport);
+  await client.connect(clientTransport);
+  return client;
+});
 
 describe("MCP ツール", () => {
   it("公開するツールと注釈", async ({ client }) => {

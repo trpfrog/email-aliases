@@ -7,6 +7,12 @@ import { handleMcpRequest } from "./handler";
 
 const origin = "https://aliases.example";
 
+const authFor = (scope: string[]): OAuthResourceAuth => ({
+  token: "token",
+  audience: `${origin}/mcp`,
+  scope,
+});
+
 const it = baseIt
   .extend("aliases", () => ({
     isEnabled: vi.fn<AliasStore["isEnabled"]>().mockResolvedValue(false),
@@ -24,11 +30,7 @@ const it = baseIt
         params: Record<string, unknown> = {},
         options: { scope?: string[]; origin?: string } = {},
       ) => {
-        const auth: OAuthResourceAuth = {
-          token: "token",
-          audience: `${origin}/mcp`,
-          scope: options.scope ?? [MANAGE_SCOPE],
-        };
+        const auth = authFor(options.scope ?? [MANAGE_SCOPE]);
         const headers = new Headers({
           "Content-Type": "application/json",
           Accept: "application/json, text/event-stream",
@@ -60,7 +62,7 @@ describe("MCP の HTTP ハンドラー", () => {
       new Request(`${origin}/mcp/other`, { method: "POST" }),
       {
         aliases,
-        auth: { token: "token", audience: `${origin}/mcp`, scope: [MANAGE_SCOPE] },
+        auth: authFor([MANAGE_SCOPE]),
         publicOrigin: origin,
       },
     );

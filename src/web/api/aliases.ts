@@ -8,13 +8,12 @@ import {
 import { z } from "zod";
 import type { AdminApi } from "../../admin/api";
 
-export type { Alias } from "../../aliases/schema";
+export { ALIAS_LIMITS, type Alias } from "../../aliases/schema";
 
 const aliases = hc<AdminApi>("/", { init: { credentials: "same-origin" } }).api.aliases;
 
 export type CreateAliasRequest = InferRequestType<typeof aliases.$post>["json"];
-export type UpdateAliasRequest = InferRequestType<typeof aliases.$patch>["json"];
-export type UpdateDetailsRequest = Exclude<UpdateAliasRequest, { disabled: boolean }>;
+export type UpdateDetailsRequest = InferRequestType<typeof aliases.$patch>["json"];
 
 const errorBody = z.object({ data: z.object({ error: z.string() }) });
 
@@ -41,6 +40,8 @@ async function request<T extends ClientResponse<unknown>>(response: Promise<T>) 
 export const aliasApi = {
   list: (offset: number) => request(aliases.$get({ query: { offset: String(offset) } })),
   create: (json: CreateAliasRequest) => request(aliases.$post({ json })),
-  update: (json: UpdateAliasRequest) => request(aliases.$patch({ json })),
+  updateDetails: (json: UpdateDetailsRequest) => request(aliases.$patch({ json })),
+  setDisabled: (address: string, disabled: boolean) =>
+    request(aliases.disabled.$put({ json: { address, disabled } })),
   delete: (address: string) => request(aliases.$delete({ json: { address } })),
 };

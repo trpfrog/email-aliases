@@ -1,7 +1,7 @@
-import { describe, expect, it as baseIt } from "vite-plus/test";
+import { describe, expect } from "vite-plus/test";
 import { z } from "zod";
 import { createAliasResult, listAliasesResult, updateAliasResult } from "../aliases/schema";
-import { createMigratedDatabase } from "../test/database";
+import { dbTest } from "../test/fixtures";
 import { app } from "./app";
 
 const origin = "https://aliases.example";
@@ -9,13 +9,7 @@ const password = "test-password";
 const authorization = `Basic ${btoa(`admin:${password}`)}`;
 const errorBody = z.object({ error: z.string() });
 
-const it = baseIt
-  // eslint-disable-next-line no-empty-pattern -- Vitest がフィクスチャーの依存関係を検出するには分割代入が必要。
-  .extend("db", ({}, { onCleanup }) => {
-    const db = createMigratedDatabase();
-    onCleanup(() => db.close());
-    return db;
-  })
+const it = dbTest
   .extend("env", ({ db }) => ({
     DB: db,
     PUBLIC_ORIGIN: origin,
@@ -30,8 +24,15 @@ const it = baseIt
   .extend(
     "api",
     ({ request }) =>
-      (method: string, body: unknown, headers: Record<string, string> = {}) =>
-        request("/api/aliases", {
+      (
+        method: string,
+        body: unknown,
+        {
+          path = "/api/aliases",
+          headers = {},
+        }: { path?: string; headers?: Record<string, string> } = {},
+      ) =>
+        request(path, {
           method,
           headers: { Origin: origin, "Content-Type": "application/json", ...headers },
           body: typeof body === "string" ? body : JSON.stringify(body),
@@ -39,6 +40,7 @@ const it = baseIt
   );
 
 const address = "shop@mail.example.com";
+const DISABLED_PATH = "/api/aliases/disabled";
 
 describe("管理画面", () => {
   it("health は認証なしで応答する", async ({ env }) => {
@@ -79,10 +81,14 @@ describe("管理画面", () => {
 
 describe("管理 API", () => {
   it("変更系は同じ Origin の JSON リクエストに限る", async ({ api }) => {
-    expect((await api("POST", { address }, { Origin: "https://other.example" })).status).toBe(403);
-    const withoutOrigin = await api("POST", { address }, { Origin: "" });
+    expect(
+      (await api("POST", { address }, { headers: { Origin: "https://other.example" } })).status,
+    ).toBe(403);
+    const withoutOrigin = await api("POST", { address }, { headers: { Origin: "" } });
     expect(withoutOrigin.status).toBe(403);
-    expect((await api("POST", { address }, { "Content-Type": "text/plain" })).status).toBe(415);
+    expect(
+      (await api("POST", { address }, { headers: { "Content-Type": "text/plain" } })).status,
+    ).toBe(415);
   });
 
   it("解釈できない JSON と不正な入力は 400 とエラーメッセージを返す", async ({ api }) => {
@@ -99,7 +105,7 @@ describe("管理 API", () => {
     expect(createAliasResult.parse(await created.json()).alias.note).toBe("メモ");
     expect((await api("POST", { address })).status).toBe(200);
 
-    const disabled = await api("PATCH", { address, disabled: true });
+    const disabled = await api("PUT", { address, disabled: true }, { path: DISABLED_PATH });
     expect(updateAliasResult.parse(await disabled.json()).alias?.disabled_at).toEqual(
       expect.any(String),
     );
@@ -109,6 +115,15 @@ describe("管理 API", () => {
       service_url: "https://example.com",
     });
     expect((await api("PATCH", { address, disabled: false, note: "両方" })).status).toBe(400);
+    expect(
+      (
+        await api(
+          "PUT",
+          { address: "missing@mail.example.com", disabled: true },
+          { path: DISABLED_PATH },
+        )
+      ).status,
+    ).toBe(404);
     expect((await api("PATCH", { address: "missing@mail.example.com", note: "x" })).status).toBe(
       404,
     );

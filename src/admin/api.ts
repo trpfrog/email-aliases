@@ -6,11 +6,14 @@ import {
   addressInput,
   createAliasInput,
   listAliasesInput,
-  updateAliasInput,
+  setAliasDisabledInput,
+  updateAliasDetailsInput,
 } from "../aliases/schema";
 import { createAliasStore, type AliasStore } from "../aliases/store";
 import type { Env } from "../env";
 import { validate } from "../http/validate";
+
+const NOT_FOUND = "エイリアスが見つかりません。";
 
 type AdminEnv = { Bindings: Env; Variables: { aliases: AliasStore } };
 
@@ -59,18 +62,19 @@ export const adminApi = new Hono<AdminEnv>()
   )
   .patch(
     "/aliases",
-    validate(
-      "json",
-      updateAliasInput,
-      "アドレス・メモ・サービス URL・有効状態の指定を確認してください。",
-    ),
+    validate("json", updateAliasDetailsInput, "アドレス・メモ・サービス URL を確認してください。"),
     async (c) => {
-      const input = c.req.valid("json");
-      const result =
-        "disabled" in input
-          ? await c.var.aliases.setDisabled(input)
-          : await c.var.aliases.updateDetails(input);
-      if (!result.updated) return c.json({ error: "エイリアスが見つかりません。" }, 404);
+      const result = await c.var.aliases.updateDetails(c.req.valid("json"));
+      if (!result.updated) return c.json({ error: NOT_FOUND }, 404);
+      return c.json(result, 200);
+    },
+  )
+  .put(
+    "/aliases/disabled",
+    validate("json", setAliasDisabledInput, "アドレスと有効状態を確認してください。"),
+    async (c) => {
+      const result = await c.var.aliases.setDisabled(c.req.valid("json"));
+      if (!result.updated) return c.json({ error: NOT_FOUND }, 404);
       return c.json(result, 200);
     },
   )

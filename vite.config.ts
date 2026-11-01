@@ -3,6 +3,7 @@ import { cloudflare } from "@cloudflare/vite-plugin";
 import { defineConfig } from "vite-plus";
 import reylo from "reylo/vite";
 import react from "@vitejs/plugin-react-swc";
+import { LOCAL_D1_ID } from "./cloudflare.config";
 
 export default defineConfig({
   lint: {
@@ -83,8 +84,7 @@ export default defineConfig({
         },
       },
       "db:migrate:local": {
-        command:
-          "cf d1 migrations apply 00000000-0000-4000-8000-000000000001 --local --persist-to .cloudflare/state --mode development",
+        command: `cf d1 migrations apply ${LOCAL_D1_ID} --local --persist-to .cloudflare/state --mode development`,
         cache: false,
       },
       check: { command: "vp check", dependsOn: ["typecheck"] },

@@ -1,7 +1,13 @@
 import { Anchor, Badge, Button, Menu, Table, Text } from "@mantine/core";
 import type { Alias } from "../../api/aliases";
 import { hostnameOf, isDisabled, splitAddress } from "../../lib/alias-display";
-import type { AliasActions } from "./alias-actions";
+
+/** 一覧の各行から呼び出す操作。 */
+export type AliasActions = {
+  edit: (alias: Alias) => void;
+  toggleDisabled: (alias: Alias) => void;
+  remove: (alias: Alias) => void;
+};
 
 const dateFormat = new Intl.DateTimeFormat("ja-JP", {
   year: "numeric",

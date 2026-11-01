@@ -42,7 +42,7 @@ src/
 ├── auth/
 │   ├── authorize.ts          # OAuth の接続承認
 │   └── consent.tsx           # hono/jsx の接続承認ページ
-├── test/                     # テスト用の DB・モジュールの代替
+├── test/                     # テスト用の fixture・モジュールの代替
 └── web/                      # React SPA の管理画面
     ├── api/                  # Hono RPC の型付き API クライアント
     ├── hooks/                # 一覧の取得・変更、非同期操作の状態
@@ -130,7 +130,7 @@ vp run dev
 各行の「操作」から登録情報の編集・無効化・有効化・削除を選べる。一覧は「有効・無効・すべて」で切り替える。
 サービス URL は追加・編集画面で入力でき、一覧のリンクから別タブで開ける。
 一覧は SWR の `useSWRImmutable` でキャッシュし、初回表示・手動更新・追加や更新、削除の後に取得する。フォーカス復帰・再接続・エラー時の自動再取得は行わない。
-`PATCH /api/aliases` は `{ address, disabled: boolean }` または `{ address, note?: string, service_url?: string }` を受け付ける。
+`PATCH /api/aliases` は登録情報 `{ address, note?: string, service_url?: string }`、`PUT /api/aliases/disabled` は有効状態 `{ address, disabled: boolean }` を更新する。
 登録情報の更新ではメモ・URL の少なくとも一方を指定する。省略した項目は変更しない。
 追加・更新・削除は `PUBLIC_ORIGIN` と同じ Origin の JSON リクエストに限定する。
 React 側の変換は SWC、最適化は SWC 内蔵の React Compiler を使う。
@@ -163,7 +163,7 @@ Vite+ 同梱の Vitest を使い、API は `vite-plus/test` から明示的に i
 - fixture を使うパラメーター化テストは、第二引数で test context を受け取れる `test.for` を使う。
 - 非同期の assertion は必ず `await` する。起動待ちは固定時間の sleep ではなく `vi.waitUntil` で状態を確認する。
 - SQL の型 assertion は `*.test-d.ts` に置く。`vp run typecheck`（`vp run check` にも含む）で Reylo の content mapper を有効にして検査する。`vp run test` 単独では型を検査しない。
-- store・メール受信・MCP ツールは実際の SQLite（`src/test/database.ts`）で検証し、MCP の HTTP ハンドラーのテストでは store をモックする。
+- store・メール受信・MCP ツールは実際の SQLite（`src/test/fixtures.ts` の `dbTest`）で検証し、MCP の HTTP ハンドラーのテストでは store をモックする。
 - レスポンスや `structuredContent` は型アサーションではなく Zod のスキーマで parse して型を付ける。
 
 参考: [Test Context](https://vitest.dev/guide/test-context)、[Testing Types](https://vitest.dev/guide/testing-types)、[Test Projects](https://vitest.dev/guide/projects)。

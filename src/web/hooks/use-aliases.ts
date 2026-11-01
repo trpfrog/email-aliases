@@ -54,12 +54,12 @@ export function useAliases() {
       ),
     updateDetails: (input: UpdateDetailsRequest) =>
       change(async () => {
-        await aliasApi.update(input);
+        await aliasApi.updateDetails(input);
         return "登録情報を更新しました";
       }),
     setDisabled: (address: string, disabled: boolean) =>
       change(async () => {
-        await aliasApi.update({ address, disabled });
+        await aliasApi.setDisabled(address, disabled);
         return disabled ? "無効化しました" : "有効化しました";
       }),
     remove: (address: string) =>

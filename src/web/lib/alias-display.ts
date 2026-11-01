@@ -15,8 +15,7 @@ export function isDisabled(alias: Alias): boolean {
   return alias.disabled_at !== null;
 }
 
-export const ALIAS_STATUSES = ["enabled", "disabled", "all"] as const;
-export type AliasStatus = (typeof ALIAS_STATUSES)[number];
+export type AliasStatus = "enabled" | "disabled" | "all";
 
 export function filterAliases(
   aliases: Alias[],

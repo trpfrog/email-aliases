@@ -1,9 +1,9 @@
 import { Box, Container, Stack } from "@mantine/core";
 import { useState } from "react";
 import type { Alias } from "./api/aliases";
-import type { AliasActions } from "./components/aliases/alias-actions";
 import { AliasDirectory } from "./components/aliases/alias-directory";
 import { AliasPageHeading } from "./components/aliases/alias-page-heading";
+import type { AliasActions } from "./components/aliases/alias-row";
 import { CreateAliasDialog } from "./components/aliases/create-alias-dialog";
 import { DeleteAliasDialog } from "./components/aliases/delete-alias-dialog";
 import { EditAliasDetailsDialog } from "./components/aliases/edit-alias-details-dialog";
@@ -12,6 +12,7 @@ import { AppFooter } from "./components/layout/app-footer";
 import { AppHeader } from "./components/layout/app-header";
 import { useAliases } from "./hooks/use-aliases";
 import { isDisabled } from "./lib/alias-display";
+import { errorMessage } from "./lib/error-message";
 
 type Dialog = { type: "create" } | { type: "edit" | "delete"; alias: Alias };
 
@@ -32,10 +33,7 @@ export function App() {
     try {
       setNotice({ tone: "success", message: await operation });
     } catch (error) {
-      setNotice({
-        tone: "error",
-        message: error instanceof Error ? error.message : "操作に失敗しました。",
-      });
+      setNotice({ tone: "error", message: errorMessage(error) });
     }
   }
 

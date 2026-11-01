@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { DOMAIN } from "../config";
 
+/** 入力の上限。UI のフォームでも同じ値を使う。 */
+export const ALIAS_LIMITS = { localPart: 64, note: 1000, serviceUrl: 2048 } as const;
+
 const LOCAL_PART = /^[a-z0-9!#$%&'+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'+/=?^_`{|}~-]+)*$/;
 
 // ドメインを含む完全なアドレスを受け付け、大文字・小文字を区別せず扱う。
@@ -10,19 +13,24 @@ export const addressSchema = z
   .toLowerCase()
   .refine((address) => {
     const [local = "", domain, ...rest] = address.split("@");
-    return domain === DOMAIN && rest.length === 0 && local.length <= 64 && LOCAL_PART.test(local);
+    return (
+      domain === DOMAIN &&
+      rest.length === 0 &&
+      local.length <= ALIAS_LIMITS.localPart &&
+      LOCAL_PART.test(local)
+    );
   }, `Use an address at ${DOMAIN} (local part: 1–64 ASCII characters).`)
   .brand<"AliasAddress">();
 
 export type AliasAddress = z.output<typeof addressSchema>;
 
-export const noteSchema = z.string().max(1000);
+export const noteSchema = z.string().max(ALIAS_LIMITS.note);
 
 // 空文字は「未設定」を表す。
 export const serviceUrlSchema = z
   .string()
   .trim()
-  .max(2048)
+  .max(ALIAS_LIMITS.serviceUrl)
   .pipe(
     z.union([
       z.literal(""),
@@ -74,8 +82,6 @@ export const updateAliasDetailsInput = z
     (input) => input.note !== undefined || input.service_url !== undefined,
     "更新する項目を指定してください。",
   );
-
-export const updateAliasInput = z.union([setAliasDisabledInput, updateAliasDetailsInput]);
 
 export type CreateAliasInput = z.output<typeof createAliasInput>;
 export type ListAliasesInput = z.output<typeof listAliasesInput>;

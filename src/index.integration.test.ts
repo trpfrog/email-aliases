@@ -9,6 +9,7 @@ import { promisify } from "node:util";
 import { hc } from "hono/client";
 import { afterAll, beforeAll, describe, expect, test, vi } from "vite-plus/test";
 import { z } from "zod";
+import { LOCAL_D1_ID } from "../cloudflare.config";
 import type { AdminApi } from "./admin/api";
 import {
   createAliasResult,
@@ -20,7 +21,6 @@ import {
 const run = promisify(execFile);
 const root = join(import.meta.dirname, "..");
 const cli = join(root, "node_modules/.bin/cf");
-const LOCAL_D1_ID = "00000000-0000-4000-8000-000000000001";
 const password = randomBytes(32).toString("hex");
 const basicAuth = (user: string, pass: string) => `Basic ${btoa(`${user}:${pass}`)}`;
 const basic = basicAuth("admin", password);
@@ -227,19 +227,16 @@ describe("React 管理画面と API", () => {
     expect(createAliasResult.parse(await created.json()).alias.address).toBe(address);
     expect((await aliases.$post({ json: input })).status).toBe(200);
 
-    const patch = (changes: { disabled: boolean } | { note?: string; service_url?: string }) =>
-      aliases.$patch({ json: { address, ...changes } });
+    const setDisabled = (disabled: boolean, target = address) =>
+      aliases.disabled.$put({ json: { address: target, disabled } });
 
-    expect(
-      (await aliases.$patch({ json: { address: "missing@mail.example.com", disabled: true } }))
-        .status,
-    ).toBe(404);
+    expect((await setDisabled(true, "missing@mail.example.com")).status).toBe(404);
 
-    const disabled = updateAliasResult.parse(await (await patch({ disabled: true })).json());
+    const disabled = updateAliasResult.parse(await (await setDisabled(true)).json());
     expect(disabled.alias).toMatchObject({ disabled_at: expect.any(String), note: input.note });
 
     const edited = updateAliasResult.parse(
-      await (await patch({ note: "一括更新", service_url: "" })).json(),
+      await (await aliases.$patch({ json: { address, note: "一括更新", service_url: "" } })).json(),
     );
     expect(edited.alias).toMatchObject({
       note: "一括更新",
@@ -247,7 +244,7 @@ describe("React 管理画面と API", () => {
       disabled_at: expect.any(String),
     });
 
-    const enabled = updateAliasResult.parse(await (await patch({ disabled: false })).json());
+    const enabled = updateAliasResult.parse(await (await setDisabled(false)).json());
     expect(enabled.alias?.disabled_at).toBeNull();
 
     const list = listAliasesResult.parse(await (await aliases.$get({ query: {} })).json());

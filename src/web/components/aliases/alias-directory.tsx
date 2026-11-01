@@ -3,9 +3,9 @@ import { useState } from "react";
 import type { Alias } from "../../api/aliases";
 import { filterAliases, type AliasStatus } from "../../lib/alias-display";
 import { ErrorAlert } from "../feedback/error-alert";
-import type { AliasActions } from "./alias-actions";
 import { AliasEmptyState } from "./alias-empty-state";
 import { AliasListFooter } from "./alias-list-footer";
+import type { AliasActions } from "./alias-row";
 import { AliasTable } from "./alias-table";
 import { AliasToolbar } from "./alias-toolbar";
 
@@ -29,6 +29,7 @@ export function AliasDirectory({
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<AliasStatus>("enabled");
   const visible = filterAliases(aliases, { status, query });
+  const actionsDisabled = loading || busy;
 
   return (
     <Paper component="section" withBorder shadow="xs" aria-label="エイリアス一覧">
@@ -37,12 +38,12 @@ export function AliasDirectory({
         onQueryChange={setQuery}
         status={status}
         onStatusChange={setStatus}
-        refreshDisabled={loading || busy}
+        refreshDisabled={actionsDisabled}
         onRefresh={onRefresh}
       />
       <Divider />
       <ErrorAlert message={error} m="md" />
-      <AliasTable aliases={visible} busy={loading || busy} actions={actions} />
+      <AliasTable aliases={visible} busy={actionsDisabled} actions={actions} />
       {loading ? (
         <Center py={64} role="status" aria-label="読み込み中">
           <Loader size="sm" />

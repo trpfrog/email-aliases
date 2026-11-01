@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vite-plus/test";
-import { addressSchema, serviceUrlSchema, updateAliasInput } from "./schema";
+import {
+  addressSchema,
+  serviceUrlSchema,
+  setAliasDisabledInput,
+  updateAliasDetailsInput,
+} from "./schema";
 
 describe("アドレスの検証", () => {
   it.each([
@@ -50,20 +55,25 @@ describe("更新内容の検証", () => {
   it.each([
     { address },
     { address, disabled: true, note: "both" },
-    { address, disabled: "true" },
     { address, note: "x".repeat(1001) },
     { address, service_url: "javascript:alert(1)" },
     { address, unknown: 1 },
-  ])("%j を拒否する", (input) => {
-    expect(updateAliasInput.safeParse(input).success).toBe(false);
+  ])("登録情報の更新 %j を拒否する", (input) => {
+    expect(updateAliasDetailsInput.safeParse(input).success).toBe(false);
   });
 
   it.each([
-    { address, disabled: true },
     { address, note: "" },
     { address, service_url: "https://example.com" },
     { address, note: "メモ", service_url: "" },
-  ])("%j を受け付ける", (input) => {
-    expect(updateAliasInput.safeParse(input).success).toBe(true);
+  ])("登録情報の更新 %j を受け付ける", (input) => {
+    expect(updateAliasDetailsInput.safeParse(input).success).toBe(true);
   });
+
+  it.each([{ address }, { address, disabled: "true" }, { address, disabled: true, note: "x" }])(
+    "有効状態の変更 %j を拒否する",
+    (input) => {
+      expect(setAliasDisabledInput.safeParse(input).success).toBe(false);
+    },
+  );
 });

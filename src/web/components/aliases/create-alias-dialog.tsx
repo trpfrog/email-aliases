@@ -1,7 +1,7 @@
 import { Button, Group, Stack, Text, TextInput } from "@mantine/core";
 import type { SubmitEvent } from "react";
 import { DOMAIN } from "../../../config";
-import type { CreateAliasRequest } from "../../api/aliases";
+import { ALIAS_LIMITS, type CreateAliasRequest } from "../../api/aliases";
 import { useAsyncAction } from "../../hooks/use-async-action";
 import { readText } from "../../lib/form";
 import { ErrorAlert } from "../feedback/error-alert";
@@ -45,7 +45,7 @@ export function CreateAliasDialog({
             rightSectionWidth={170}
             rightSectionPointerEvents="none"
             required
-            maxLength={64}
+            maxLength={ALIAS_LIMITS.localPart}
             autoCapitalize="none"
             spellCheck={false}
             autoComplete="off"
