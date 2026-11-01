@@ -94,7 +94,8 @@ vp run build
    pnpm exec cf d1 migrations apply <database-id>
    ```
 
-4. 本番用の値を 1Password の `Production` 保管庫の `email-aliases` アイテムに置き、デプロイする（値は Worker Secrets としてアップロードされる）。
+4. 本番用の値を 1Password の `Production` 保管庫の Login アイテム `email-aliases` に置き、デプロイする（値は Worker Secrets としてアップロードされる）。
+   ユーザー名は `admin`、パスワードは `ADMIN_PASSWORD`、ウェブサイトは公開 URL、カスタムフィールド `FORWARD_TO` は転送先にする。ローカル用は `Development` 保管庫に同じ形で置く。
    項目は `.prod.vars.tpl` のとおり。公開 URL（`PUBLIC_ORIGIN`、末尾 `/` なし）もリポジトリに載せないよう、ここに置く。
    `FORWARD_TO` は Email Routing で確認済みのアドレスにする。
 
