@@ -23,17 +23,6 @@ export interface AppConfig {
   };
 }
 
-export interface DeployConfig {
-  workerName: string;
-  publicOrigin: string;
-  d1DatabaseId?: string;
-  kvNamespaceId?: string;
-}
-
 export function defineApp(config: AppConfig): AppConfig {
-  return config;
-}
-
-export function defineDeploy(config: DeployConfig): DeployConfig {
   return config;
 }

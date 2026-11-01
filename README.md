@@ -1,7 +1,7 @@
 # Email Aliases
 
 独自ドメインの Catch-all アドレス（`*@mail.example.com`）の受信許可リストを管理する、個人用の MCP サーバー。
-ドメイン・表示名・テーマカラー・デプロイ先は `app.config.ts` で変更できる。
+ドメイン・表示名・テーマカラーは `app.config.ts`、デプロイ先は `deploy.config.ts` で変更できる。
 
 ```mermaid
 flowchart LR
@@ -86,7 +86,7 @@ vp run build
    pnpm exec cf kv namespaces create --title email-aliases-oauth
    ```
 
-2. `app.config.ts` の `app` と `deploy` を自分の環境に合わせて編集する。
+2. `app.config.ts` と `deploy.config.ts` を自分の環境に合わせて編集する。
 
 3. マイグレーションを適用する（DB 名ではなく database ID を指定）。
 

@@ -34,7 +34,7 @@ flowchart TD
 - `src/aliases/store.ts` が SQL を扱う唯一の境界。MCP・管理 API・メール受信はすべてこの store を使う。
 - SQL は `src/aliases/queries/*.sql` に置き、Reylo が型を推論する。スキーマ変更は `migrations/` に追加する。
 - 入力のスキーマは Zod で `src/aliases/schema.ts` に置く。検証ライブラリへの依存は `src/http/validate.ts` に閉じる。
-- ドメイン・表示名・テーマカラー・デプロイ先は `app.config.ts` に集約する。コードに直接書かず、`src/config.ts` の `MAIL_DOMAIN`・`APP_NAME` などを使う。単体テストのドメインは `src/test/setup.ts` で `mail.example.test` に固定している。
+- ドメイン・表示名・テーマカラーは `app.config.ts`、デプロイ先は `deploy.config.ts` に置く。`cloudflare.config.ts` の依存は開発サーバーから読めないため、Worker が読む設定を `deploy.config.ts` 側に入れない。コードに直接書かず、`src/config.ts` の `MAIL_DOMAIN`・`APP_NAME` などを使う。単体テストのドメインは `src/test/setup.ts` で `mail.example.test` に固定している。
 - 管理画面（`src/web/`）は `src/admin/api.ts` の `AdminApi` 型を `hono/client` に渡して型を共有する。
 - 管理画面の UI は Mantine のコンポーネントと style props、`theme.ts` で作る。独自 CSS・外部フォントは使わない。
 

@@ -49,6 +49,8 @@ async function startDevServer(): Promise<DevServer> {
   for (const file of [
     "package.json",
     "tsconfig.json",
+    "app.config.ts",
+    "deploy.config.ts",
     "cloudflare.config.ts",
     "vite.config.ts",
     "index.html",

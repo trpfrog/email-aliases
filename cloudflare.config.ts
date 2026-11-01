@@ -1,5 +1,5 @@
 import { bindings, defineConfig } from "cf/config";
-import { deploy } from "./app.config.ts";
+import { deploy } from "./deploy.config.ts";
 
 /** 開発用のローカル D1 の ID。db:migrate:local と結合テストも使う。 */
 export const LOCAL_D1_ID = "00000000-0000-4000-8000-000000000001";
