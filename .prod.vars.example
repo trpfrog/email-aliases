@@ -1,0 +1,4 @@
+# 本番用の Worker Secrets。.prod.vars にコピーして値を設定し、vp run deploy --secrets-file .prod.vars でアップロードする
+PUBLIC_ORIGIN=https://email-aliases.your-subdomain.workers.dev
+ADMIN_PASSWORD=replace-with-a-long-random-password
+FORWARD_TO=your-verified-inbox@example.com

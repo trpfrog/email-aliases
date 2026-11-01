@@ -18,12 +18,12 @@ export default defineConfig(({ mode }) => ({
         id: mode === "development" ? LOCAL_D1_ID : deploy.d1DatabaseId,
       }),
       OAUTH_KV: bindings.kv({ id: mode === "development" ? undefined : deploy.kvNamespaceId }),
-      PUBLIC_ORIGIN: bindings.text(
+      // 本番の URL は公開リポジトリに載せないよう、Secret として .prod.vars から渡す。
+      PUBLIC_ORIGIN:
         mode === "development"
           ? // 結合テストは空いているポートで起動するため、開発時だけ上書きできる。
-            (process.env.DEV_PUBLIC_ORIGIN ?? "http://localhost:5173")
-          : deploy.publicOrigin,
-      ),
+            bindings.text(process.env.DEV_PUBLIC_ORIGIN ?? "http://localhost:5173")
+          : bindings.secret(),
       ADMIN_PASSWORD: bindings.secret(),
       FORWARD_TO: bindings.secret(),
     },

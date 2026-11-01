@@ -91,6 +91,19 @@ describe("管理 API", () => {
     ).toBe(415);
   });
 
+  it("PUBLIC_ORIGIN が未設定なら変更系を受け付けない", async ({ env }) => {
+    const response = await app.request(
+      "/api/aliases",
+      {
+        method: "POST",
+        headers: { Authorization: authorization, "Content-Type": "application/json" },
+        body: JSON.stringify({ address }),
+      },
+      { ...env, PUBLIC_ORIGIN: undefined },
+    );
+    expect(response.status).toBe(500);
+  });
+
   it("解釈できない JSON と不正な入力は 400 とエラーメッセージを返す", async ({ api }) => {
     for (const body of ["{", { address: "shop" }, { address, service_url: "javascript:x" }]) {
       const response = await api("POST", body);

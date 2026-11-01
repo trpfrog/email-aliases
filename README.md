@@ -94,10 +94,13 @@ vp run build
    pnpm exec cf d1 migrations apply <database-id>
    ```
 
-4. `.dev.vars` に本番用の `ADMIN_PASSWORD` と、Email Routing で確認済みの `FORWARD_TO` を設定してデプロイする（値は Worker Secrets としてアップロードされる）。
+4. `.prod.vars` に本番用の値を設定してデプロイする（値は Worker Secrets としてアップロードされる）。
+   公開 URL（`PUBLIC_ORIGIN`、末尾 `/` なし）もリポジトリに載せないよう、ここに置く。
+   `FORWARD_TO` は Email Routing で確認済みのアドレスにする。
 
    ```sh
-   vp run deploy --secrets-file .dev.vars
+   cp .prod.vars.example .prod.vars
+   vp run deploy --secrets-file .prod.vars
    ```
 
 5. ChatGPT から接続し、使用中のアドレスを **先に** `create_alias` で登録する。

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createAliasStore } from "./aliases/store";
 import { AUTHORIZE_PATH, MANAGE_SCOPE, MCP_PATH, OAUTH_SCOPES } from "./config";
 import { receiveEmail } from "./email/receive";
-import type { Env } from "./env";
+import { requirePublicOrigin, type Env } from "./env";
 import { app } from "./http/app";
 import { handleMcpRequest } from "./mcp/handler";
 
@@ -18,13 +18,14 @@ const mcp = {
     return await handleMcpRequest(request, {
       aliases: createAliasStore(env.DB),
       auth,
-      publicOrigin: env.PUBLIC_ORIGIN,
+      publicOrigin: requirePublicOrigin(env),
     });
   },
 } satisfies ExportedHandler<Env>;
 
 export default {
   fetch(request, env, ctx) {
+    const publicOrigin = requirePublicOrigin(env);
     const provider = new OAuthProvider<Env>({
       apiRoute: MCP_PATH,
       apiHandler: mcp,
@@ -36,8 +37,8 @@ export default {
       scopesSupported: OAUTH_SCOPES,
       requiredScopes: [MANAGE_SCOPE],
       resourceMetadata: {
-        resource: `${env.PUBLIC_ORIGIN}${MCP_PATH}`,
-        authorization_servers: [env.PUBLIC_ORIGIN],
+        resource: `${publicOrigin}${MCP_PATH}`,
+        authorization_servers: [publicOrigin],
       },
     });
     return provider.fetch(request, env, ctx);

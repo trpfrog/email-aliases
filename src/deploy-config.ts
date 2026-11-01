@@ -3,7 +3,6 @@
 
 export interface DeployConfig {
   workerName: string;
-  publicOrigin: string;
   d1DatabaseId?: string;
   kvNamespaceId?: string;
 }

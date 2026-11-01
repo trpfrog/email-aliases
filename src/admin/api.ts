@@ -10,7 +10,7 @@ import {
   updateAliasDetailsInput,
 } from "../aliases/schema";
 import { createAliasStore, type AliasStore } from "../aliases/store";
-import type { Env } from "../env";
+import { requirePublicOrigin, type Env } from "../env";
 import { validate } from "../http/validate";
 
 const NOT_FOUND = "エイリアスが見つかりません。";
@@ -32,7 +32,7 @@ const withAliasStore = createMiddleware<AdminEnv>(async (c, next) => {
 /** 変更系のリクエストを、管理画面と同じ Origin からの JSON に限定する（CSRF 対策）。 */
 const requireSameOriginJson = createMiddleware<AdminEnv>(async (c, next) => {
   if (c.req.method !== "GET" && c.req.method !== "HEAD") {
-    if (c.req.header("Origin") !== c.env.PUBLIC_ORIGIN) {
+    if (c.req.header("Origin") !== requirePublicOrigin(c.env)) {
       return c.json({ error: "Invalid origin" }, 403);
     }
     const contentType = c.req.header("Content-Type")?.split(";")[0]?.trim().toLowerCase();
