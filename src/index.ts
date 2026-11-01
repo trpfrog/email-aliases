@@ -26,6 +26,7 @@ const mcp = {
     const { auth } = authenticatedContext.parse(ctx);
     return await handleMcpRequest(request, {
       aliases: createAliasStore(env.DB),
+      received: createReceivedEmailStore(env.DB),
       auth,
       publicOrigin: requirePublicOrigin(env),
     });

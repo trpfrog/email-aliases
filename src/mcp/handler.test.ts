@@ -3,6 +3,7 @@ import { describe, expect, it as baseIt, vi } from "vite-plus/test";
 import { z } from "zod";
 import type { AliasStore } from "../aliases/store";
 import { MANAGE_SCOPE } from "../config";
+import type { ReceivedEmailStore } from "../received/store";
 import { handleMcpRequest, MAX_MCP_REQUEST_BODY_BYTES } from "./handler";
 
 const origin = "https://aliases.example";
@@ -22,9 +23,15 @@ const it = baseIt
     updateDetails: vi.fn<AliasStore["updateDetails"]>(),
     delete: vi.fn<AliasStore["delete"]>(),
   }))
+  .extend("received", () => ({
+    record: vi.fn<ReceivedEmailStore["record"]>(),
+    list: vi.fn<ReceivedEmailStore["list"]>(),
+    delete: vi.fn<ReceivedEmailStore["delete"]>(),
+    clear: vi.fn<ReceivedEmailStore["clear"]>(),
+  }))
   .extend(
     "request",
-    ({ aliases }) =>
+    ({ aliases, received }) =>
       (
         method: string,
         params: Record<string, unknown> = {},
@@ -43,7 +50,7 @@ const it = baseIt
             headers,
             body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
           }),
-          { aliases, auth, publicOrigin: origin },
+          { aliases, received, auth, publicOrigin: origin },
         );
       },
   );
@@ -57,11 +64,12 @@ const toolResponse = z.object({
 });
 
 describe("MCP の HTTP ハンドラー", () => {
-  it("エンドポイント以外のパスは 404 にする", async ({ aliases }) => {
+  it("エンドポイント以外のパスは 404 にする", async ({ aliases, received }) => {
     const response = await handleMcpRequest(
       new Request(`${origin}/mcp/other`, { method: "POST" }),
       {
         aliases,
+        received,
         auth: authFor([MANAGE_SCOPE]),
         publicOrigin: origin,
       },

@@ -139,9 +139,12 @@ describe("OAuth と MCP", () => {
       .object({ tools: z.array(z.object({ name: z.string() })) })
       .parse(await rpc(access_token, "tools/list"));
     expect(tools.map((tool) => tool.name).toSorted()).toEqual([
+      "clear_received_emails",
       "create_alias",
       "delete_alias",
+      "delete_received_email",
       "list_aliases",
+      "list_received_emails",
       "set_alias_disabled",
       "update_alias_details",
     ]);

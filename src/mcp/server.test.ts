@@ -8,22 +8,30 @@ import {
   updateAliasResult,
 } from "../aliases/schema";
 import { createAliasStore } from "../aliases/store";
-import { dbTest } from "../test/fixtures";
+import {
+  clearReceivedEmailsResult,
+  deleteReceivedEmailResult,
+  listReceivedEmailsResult,
+} from "../received/schema";
+import { createReceivedEmailStore } from "../received/store";
+import { address as aliasAddress, dbTest } from "../test/fixtures";
 import { createMcpServer, MAX_TOOL_INPUT_ELEMENTS } from "./server";
 
-const it = dbTest.extend("client", async ({ db }, { onCleanup }) => {
-  const server = createMcpServer(createAliasStore(db));
-  const client = new Client({ name: "test", version: "1.0.0" });
-  onCleanup(async () => {
-    await client.close();
-    await server.close();
-  });
+const it = dbTest
+  .extend("received", ({ db }) => createReceivedEmailStore(db))
+  .extend("client", async ({ db, received }, { onCleanup }) => {
+    const server = createMcpServer({ aliases: createAliasStore(db), received });
+    const client = new Client({ name: "test", version: "1.0.0" });
+    onCleanup(async () => {
+      await client.close();
+      await server.close();
+    });
 
-  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-  await server.connect(serverTransport);
-  await client.connect(clientTransport);
-  return client;
-});
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    await server.connect(serverTransport);
+    await client.connect(clientTransport);
+    return client;
+  });
 
 describe("MCP ツール", () => {
   it("公開するツールと注釈", async ({ client }) => {
@@ -37,6 +45,9 @@ describe("MCP ツール", () => {
         destructiveHint: false,
       }),
       delete_alias: expect.objectContaining({ destructiveHint: true }),
+      list_received_emails: expect.objectContaining({ readOnlyHint: true }),
+      delete_received_email: expect.objectContaining({ destructiveHint: true }),
+      clear_received_emails: expect.objectContaining({ destructiveHint: true }),
     });
     for (const tool of tools) expect(tool.outputSchema).toBeDefined();
   });
@@ -93,6 +104,49 @@ describe("MCP ツール", () => {
     });
   });
 
+  it("受信履歴を絞り込んで一覧し、個別・一括で削除できる", async ({ client, received }) => {
+    for (const [local, outcome] of [
+      ["shop", "forwarded"],
+      ["old", "disabled"],
+      ["typo", "unknown"],
+    ] as const) {
+      await received.record({
+        recipient: aliasAddress(`${local}@mail.example.test`),
+        sender: "sender@example.com",
+        size: 100,
+        outcome,
+      });
+    }
+    const list = async (filter: string) =>
+      listReceivedEmailsResult.parse(
+        (await client.callTool({ name: "list_received_emails", arguments: { filter } }))
+          .structuredContent,
+      ).emails;
+
+    expect((await list("dropped")).map((email) => email.outcome).toSorted()).toEqual([
+      "disabled",
+      "unknown",
+    ]);
+    const [unknown] = await list("unknown");
+    expect(unknown).toMatchObject({
+      recipient: "typo@mail.example.test",
+      sender: "sender@example.com",
+    });
+
+    const deleted = await client.callTool({
+      name: "delete_received_email",
+      arguments: { id: unknown?.id },
+    });
+    expect(deleteReceivedEmailResult.parse(deleted.structuredContent).deleted).toBe(true);
+
+    const cleared = await client.callTool({
+      name: "clear_received_emails",
+      arguments: { filter: "dropped" },
+    });
+    expect(clearReceivedEmailsResult.parse(cleared.structuredContent)).toEqual({ deleted: 1 });
+    expect((await list("all")).map((email) => email.outcome)).toEqual(["forwarded"]);
+  });
+
   it.for([
     { name: "create_alias", arguments: { address: "wrong@other.example" } },
     {
@@ -102,6 +156,9 @@ describe("MCP ツール", () => {
     { name: "delete_alias", arguments: { address: "*" } },
     { name: "list_aliases", arguments: { limit: 101 } },
     { name: "list_aliases", arguments: { offset: -1 } },
+    { name: "list_received_emails", arguments: { filter: "spam" } },
+    { name: "delete_received_email", arguments: { id: 0 } },
+    { name: "clear_received_emails", arguments: {} },
     { name: "update_alias_details", arguments: { address: "shop@mail.example.test" } },
     {
       name: "update_alias_details",

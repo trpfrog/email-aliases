@@ -14,6 +14,16 @@ import {
   updateAliasResult,
 } from "../aliases/schema";
 import { MAIL_DOMAIN } from "../config";
+import {
+  clearReceivedEmailsInput,
+  clearReceivedEmailsResult,
+  deleteReceivedEmailResult,
+  listReceivedEmailsInput,
+  listReceivedEmailsResult,
+  RECEIVED_LIMITS,
+  receivedEmailIdInput,
+} from "../received/schema";
+import type { ReceivedEmailStore } from "../received/store";
 
 const readOnly: ToolAnnotations = { readOnlyHint: true, openWorldHint: false };
 const idempotentWrite: ToolAnnotations = {
@@ -45,12 +55,18 @@ async function respond<Output extends z.ZodObject>(
     console.error("MCP tool failed", error);
     return {
       isError: true,
-      content: [{ type: "text", text: "The alias database is unavailable. Try again later." }],
+      content: [{ type: "text", text: "The database is unavailable. Try again later." }],
     };
   }
 }
 
-export function createMcpServer(aliases: AliasStore): McpServer {
+export function createMcpServer({
+  aliases,
+  received,
+}: {
+  aliases: AliasStore;
+  received: ReceivedEmailStore;
+}): McpServer {
   const server = new McpServer(
     { name: "email-aliases", version: "0.1.0" },
     { maxToolInputElements: MAX_TOOL_INPUT_ELEMENTS },
@@ -113,6 +129,41 @@ export function createMcpServer(aliases: AliasStore): McpServer {
       annotations: idempotentDelete,
     },
     ({ address }) => respond(deleteAliasResult, aliases.delete(address)),
+  );
+
+  server.registerTool(
+    "list_received_emails",
+    {
+      description: `List the history of emails received at ${MAIL_DOMAIN} from the last 180 days, newest first. outcome is "forwarded" (sent to the inbox), "disabled" (dropped because the alias is disabled), or "unknown" (dropped because no alias exists; useful for finding aliases that were never created). filter narrows by outcome; "dropped" matches both "disabled" and "unknown". Unknown recipients are not recorded during floods (over ${RECEIVED_LIMITS.newUnknownPerHour} new or ${RECEIVED_LIMITS.unknownPerHour} total per hour). Use next_offset as offset to fetch the next page.`,
+      inputSchema: listReceivedEmailsInput,
+      outputSchema: listReceivedEmailsResult,
+      annotations: readOnly,
+    },
+    (input) => respond(listReceivedEmailsResult, received.list(input)),
+  );
+
+  server.registerTool(
+    "delete_received_email",
+    {
+      description:
+        "Delete one entry from the received email history by its id. Does not affect aliases or delivered messages.",
+      inputSchema: receivedEmailIdInput,
+      outputSchema: deleteReceivedEmailResult,
+      annotations: idempotentDelete,
+    },
+    ({ id }) => respond(deleteReceivedEmailResult, received.delete(id)),
+  );
+
+  server.registerTool(
+    "clear_received_emails",
+    {
+      description:
+        'Delete every entry in the received email history that matches filter ("all", "forwarded", "dropped", "disabled", or "unknown") and return how many were deleted. Does not affect aliases or delivered messages.',
+      inputSchema: clearReceivedEmailsInput,
+      outputSchema: clearReceivedEmailsResult,
+      annotations: idempotentDelete,
+    },
+    ({ filter }) => respond(clearReceivedEmailsResult, received.clear(filter)),
   );
 
   return server;
