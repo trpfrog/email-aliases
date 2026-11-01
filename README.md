@@ -21,78 +21,72 @@ Worker は 1 つ、D1 は 1 テーブル。OAuth の保存先として KV を 1 
 
 ```text
 src/
-├── index.ts              # Worker の入口と依存の組み立て
-├── index.test.mjs        # OAuth/MCP の結合テスト
-├── config.ts             # ドメイン・パス・権限の共通定義
-├── env.ts                # Worker bindings の型
+├── index.ts                  # Worker の入口。OAuthProvider・MCP・メール受信を組み立てる
+├── index.integration.test.ts # cf dev を起動する OAuth/MCP/管理 API の結合テスト
+├── config.ts                 # ドメイン・パス・権限の共通定義
+├── env.ts                    # Worker bindings の型
 ├── aliases/
-│   ├── schema.ts         # 入力検証と正規化
-│   ├── store.ts          # エイリアスの作成・一覧・更新・削除・有効状態の確認
-│   ├── store.test.ts     # SQLite と MCP を使った操作・受信判断のテスト
-│   └── queries/*.sql     # Reylo が型推論する SQL
-├── email/handler.ts      # 有効な登録済み宛先なら転送、未登録・無効なら drop
-├── admin/routes.ts       # 管理画面と JSON API の Basic 認証・Origin 検証
-├── web/
-│   ├── main.tsx          # React の起動
-│   ├── app.tsx           # 画面の組み立て
-│   ├── theme.ts          # Mantine の緑テーマ・標準フォント
-│   ├── api/              # Hono RPC の型付き API クライアント
-│   ├── hooks/            # 一覧取得と追加・削除の状態管理
-│   ├── components/
-│   │   ├── aliases/      # 見出し・検索欄・テーブル・行・空状態・ダイアログ
-│   │   ├── layout/       # 共通ヘッダー・フッター
-│   │   └── feedback/     # 操作結果の通知
-│   └── tsconfig.json     # DOM・React 用の型検査設定
+│   ├── schema.ts             # 入力・結果・Alias の Zod スキーマ（MCP の outputSchema にも使う）
+│   ├── store.ts              # SQL を扱う唯一の境界。AliasStore の型を明示する
+│   ├── store.test-d.ts       # Alias と Reylo が推論する行の型の一致を検査
+│   └── queries/*.sql         # Reylo が型推論する SQL
+├── email/receive.ts          # 有効な登録済み宛先なら転送、未登録・無効なら drop
 ├── mcp/
-│   ├── server.ts         # MCP ツール定義
-│   ├── http.ts           # HTTP transport・scope・Origin の検証
-│   └── http.test.ts
-└── auth/
-    ├── routes.ts         # Basic 認証と OAuth の承認処理
-    ├── consent.tsx       # hono/jsx の接続承認ページ
-    └── consent.test.ts   # JSX の表示・エスケープ
+│   ├── server.ts             # MCP ツール定義
+│   └── handler.ts            # Streamable HTTP・scope・Origin の検証
+├── http/
+│   ├── app.ts                # OAuthProvider の defaultHandler（管理画面・API・承認・health）
+│   ├── require-admin.ts      # Basic 認証
+│   └── validate.ts           # Standard Schema による入力検証
+├── admin/api.ts              # 管理 API と、hono/client と共有する AdminApi 型
+├── auth/
+│   ├── authorize.ts          # OAuth の接続承認
+│   └── consent.tsx           # hono/jsx の接続承認ページ
+├── test/                     # テスト用の DB・モジュールの代替
+└── web/                      # React SPA の管理画面
+    ├── api/                  # Hono RPC の型付き API クライアント
+    ├── hooks/                # 一覧の取得・変更、非同期操作の状態
+    ├── lib/                  # 表示・絞り込み・フォームの補助関数
+    └── components/           # 一覧・ダイアログ・通知・レイアウト
 ```
 
-テストは実装の隣に置く。Worker 全体の OAuth/MCP 結合テストは `src/index.test.mjs` に置く。
+テストは実装の隣に置く。
 
-MCP とメール受信は同じ store を使い、SQL は `queries/` に集約する。
-store には DB クライアント、メール受信には存在確認だけを渡す。
-認証と通信処理を変更しても、エイリアス操作の実装に手を入れる必要はない。
-管理画面は `admin/routes.ts` の `AdminApi` 型を `hono/client` の `hc` に渡し、
-Zod による入力検証と JSON レスポンスからリクエスト・レスポンスの型を共有する。
+MCP・管理 API・メール受信は同じ store を使い、SQL は `queries/` に集約する。
+入力の検証は Zod のスキーマを `aliases/schema.ts` に置き、MCP では SDK に、HTTP では
+`@hono/standard-validator`（Standard Schema）に渡す。検証ライブラリへの依存は `http/validate.ts` に閉じる。
+管理画面は `admin/api.ts` の `AdminApi` 型を `hono/client` の `hc` に渡し、リクエスト・レスポンスの型を共有する。
+
+## 型安全と Lint
+
+`any`・型アサーション（`as`）・non-null アサーション（`!`）は lint で禁止している（`as const` は可）。
+`vite.config.ts` の `lint` で oxlint の type-aware ルール（tsgolint）を有効にし、`vp run check` で検査する。
+tsconfig は `strict` に加えて `noUncheckedIndexedAccess` を有効にしている。
+
+tsgolint は TypeScript 7.0 ベースで content mapper に対応しないため、`.sql` の import は型が解決されない。
+そこで `aliases/store.ts` を境界とし、外向きの型（`AliasStore`・`Alias`）を明示する。
+この 2 ファイル（`store.ts`・`store.test-d.ts`）だけ `no-unsafe-*` 系のルールを外し、
+手書きの型と Reylo の推論結果の一致は `store.test-d.ts` を tsc（content mapper あり）で検査して保証する。
 
 ## SQL と型検査
 
-Reylo が `.sql` のパラメーター・行の型・結果件数を推論するため、DB の行の型は手書きしない。
-`vp run db:prepare` は `migrations/*.sql` から型検査専用の `.reylo/schema.sqlite` を作り直す。
-アプリのデータを持つ D1 とは別の使い捨て DB で、SQL とテーブル定義の整合性を確認する。
-開発・ビルド・型検査・単体テストの各スクリプトから自動実行する。
+Reylo が `.sql` のパラメーター・行の型・結果件数を推論する。
+`Alias` の型は store の外へ公開するために Zod で定義しているが、推論結果と一致しなければ型検査が失敗する。
+`vp run db:prepare` は `migrations/*.sql` から型検査専用の使い捨て DB `.reylo/schema.sqlite` を作り直す（Git 管理外）。
+開発・ビルド・型検査・単体テストの各タスクから自動実行する。
 
 Reylo の content mapper を使うため **TypeScript 7.1 Beta** を固定している。
-VS Code では `TypeScriptTeam.native-preview` 拡張を入れ、ワークスペースの TypeScript と外部コードの実行を許可すると SQL の型を表示できる。
-`.reylo/` はキャッシュと使い捨て DB のため Git 管理しない。
 
 ### VS Code で `.sql` の import が解決できない場合
 
-1. `pnpm install`、`vp run typecheck` を実行する。型検査用の DB も準備される。
-2. 推奨拡張の **TypeScript 7**（`TypeScriptTeam.native-preview`）をインストール・有効化する。
-3. このリポジトリのルートを信頼済みワークスペースとして開く。
-4. `Developer: Reload Window` を実行し、ワークスペースの TypeScript の使用と content mapper の外部コード実行の確認が出たら許可する。通知を見逃した場合は通知センターも確認する。
-5. まだ解決しない場合は `TypeScript: Enable TypeScript 7` を実行し、出力パネルの **TypeScript 7** でワークスペースの TypeScript 7.1 が使われているか確認する。
+拡張内蔵の TypeScript 7.0 は content mapper に対応しないため、ワークスペースの 7.1 を使う必要がある。
 
-`.vscode/settings.json` はワークスペースの TypeScript と content mapper の有効化を指定し、`.vscode/extensions.json` に必要な拡張を推薦している。
-拡張内蔵の TypeScript 7.0 は content mapper に対応しないため、Reylo の SQL import にはワークスペースの 7.1 が必要。
-
-`SqliteClient` を `PostgresClient` に渡せないというエラーの場合は、Reylo の SQLite 解析エンジンが読み込めていない可能性がある。読み込み失敗時の代替の型が Postgres になるため、実際の原因は `.sql` ファイルの診断も確認する。
-特にエディターから起動する `node` が 20 系の場合、必須の `node:sqlite` がない。mise 向けに `.tool-versions` で Node 24.14.0 を指定しているので、`mise install` 後に VS Code を再起動する。シェルでの `node --version` だけでなく、VS Code 側の Node も 24 以上にする。
-
-VS Code が古い Node の PATH を引き継いでいる場合、`Reload Window` では直らない。作業を保存して **VS Code の全ウィンドウを完全終了（macOS は ⌘Q）**してから、リポジトリで次を実行する。
-
-```sh
-mise exec node@24.14.0 -- code .
-```
-
-VS Code が既に起動していると既存プロセスの環境が再利用されるため、全終了してから実行する。
+1. `pnpm install` と `vp run typecheck` を実行する。
+2. 推奨拡張 **TypeScript 7**（`TypeScriptTeam.native-preview`）を入れ、リポジトリを信頼済みワークスペースとして開く。
+3. `Developer: Reload Window` を実行し、ワークスペースの TypeScript の使用と外部コードの実行を許可する。
+4. 型が `PostgresClient` 向けになる場合は、Reylo の SQLite エンジンが読み込めていない。
+   VS Code から起動される Node が 24 未満（`node:sqlite` がない）なことが多いので、
+   VS Code を完全終了（macOS は ⌘Q）してから `mise exec node@24.14.0 -- code .` で開き直す。
 
 ## MCP ツール
 
@@ -102,13 +96,13 @@ VS Code が既に起動していると既存プロセスの環境が再利用さ
 | `list_aliases`         | `limit?`, `offset?`                | アドレス順に一覧。`next_offset` で次ページを取得        |
 | `delete_alias`         | `address`                          | 登録を削除。以後のメールを drop                         |
 | `set_alias_disabled`   | `address`, `disabled`              | `true` で転送停止、`false` で再開。登録情報は保持       |
-| `update_alias_note`    | `address`, `note`                  | メモを編集。空文字で消去。有効状態は変更しない          |
 | `update_alias_details` | `address`, `note?`, `service_url?` | メモ・サービス URL を編集。省略項目は保持、空文字で消去 |
 
 一覧には無効なエイリアスも含む。`disabled_at` が `null` なら有効、日時が入っていれば無効。
 無効化を繰り返しても日時は維持され、有効化すると `null` に戻る。
 既存アドレスを `create_alias` で再登録してもメモ・サービス URL・無効状態は変わらない。
 `service_url` は任意の HTTP(S) URL（最大 2048 文字）。未設定は空文字で表す。
+各ツールは `outputSchema` を宣言し、結果を `structuredContent` で返す。
 
 `address` は `shopping@mail.example.com` のようなドメインを含む完全なアドレス。前後の空白を除去して小文字にする。
 Web UI では `@` より前だけを入力し、UI 側でドメインを付けて API に送信する。
@@ -116,7 +110,7 @@ ASCII のドット区切りのローカルパート（最大 64 文字）のみ�
 完全一致で判定するため、`shopping` の登録で `shopping+news` は許可されない。
 転送先は全アドレス共通で、Cloudflare で確認済みの受信箱を指定する。
 転送ループ防止のため `mail.example.com` 自体は転送先に指定できない。
-DB の参照失敗や転送エラーは握りつぶさず、Worker の失敗として扱う。
+`FORWARD_TO` の未設定・誤設定、DB の参照失敗や転送エラーは握りつぶさず、Worker の失敗として扱う。
 
 ## ローカル開発
 
@@ -149,7 +143,7 @@ D1 と KV は `.cloudflare/state` に保存される。ローカル操作は本�
 vp run check       # フォーマット・Lint・TypeScript
 vp run typecheck   # マイグレーションから DB を作り、SQL と TypeScript を型検査
 vp run test        # MCP・SQLite・受信判断・JSX・HTTP のテスト
-vp run test:integration # 一時ディレクトリで cf dev・D1・KV を起動して OAuth/MCP を検証
+vp run test:integration # 一時ディレクトリで cf dev・D1・KV を起動して OAuth/MCP/管理 API を検証
 vp run build      # cf build（アップロードなし）
 ```
 
@@ -161,13 +155,16 @@ vp run build      # cf build（アップロードなし）
 
 Vite+ 同梱の Vitest を使い、API は `vite-plus/test` から明示的に import する。
 `unit` と `integration` の test project を分け、通常の `vp run test` では単体テスト、
-`vp run test:integration` ではローカル Worker を起動する結合テストを実行する。
+`vp run test:integration` ではローカル Worker を起動する結合テスト（`*.integration.test.ts`）を実行する。
+結合テストは空いているポートで起動し、開発モードの `PUBLIC_ORIGIN` を環境変数 `DEV_PUBLIC_ORIGIN` で上書きする。
+単体テストでは `cloudflare:workers` を `src/test/cloudflare-workers.ts` に差し替える。
 
 - DB・MCP 接続・モックは `test.extend` の fixture でテストごとに作る。接続の解放は `onCleanup` に登録し、準備の途中で失敗しても後片付けする。
 - fixture を使うパラメーター化テストは、第二引数で test context を受け取れる `test.for` を使う。
 - 非同期の assertion は必ず `await` する。起動待ちは固定時間の sleep ではなく `vi.waitUntil` で状態を確認する。
 - SQL の型 assertion は `*.test-d.ts` に置く。`vp run typecheck`（`vp run check` にも含む）で Reylo の content mapper を有効にして検査する。`vp run test` 単独では型を検査しない。
-- 実際の SQLite・MCP transport を使った既存の振る舞いの検証を保ち、HTTP adapter のテストでは store をモックする。
+- store・メール受信・MCP ツールは実際の SQLite（`src/test/database.ts`）で検証し、MCP の HTTP ハンドラーのテストでは store をモックする。
+- レスポンスや `structuredContent` は型アサーションではなく Zod のスキーマで parse して型を付ける。
 
 参考: [Test Context](https://vitest.dev/guide/test-context)、[Testing Types](https://vitest.dev/guide/testing-types)、[Test Projects](https://vitest.dev/guide/projects)。
 
