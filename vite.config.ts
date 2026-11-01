@@ -4,6 +4,7 @@ import { defineConfig } from "vite-plus";
 import reylo from "reylo/vite";
 import react from "@vitejs/plugin-react-swc";
 import { LOCAL_D1_ID } from "./cloudflare.config";
+import { app } from "./app.config.ts";
 
 export default defineConfig({
   lint: {
@@ -97,6 +98,14 @@ export default defineConfig({
     },
   },
   plugins: [
+    {
+      // index.html の %APP_*% を app.config.ts の値に置き換える。
+      name: "app-config-html",
+      transformIndexHtml: (html) =>
+        html
+          .replaceAll("%APP_NAME%", app.name)
+          .replaceAll("%APP_BROWSER_COLOR%", app.theme.browserColor),
+    },
     reylo(),
     react({
       // Hono の承認ページは既存の JSX 変換を使う。

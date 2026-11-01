@@ -1,6 +1,6 @@
 import type { ConsentDescription } from "@cloudflare/workers-oauth-provider";
 import type { JSX } from "hono/jsx/jsx-runtime";
-import { DOMAIN } from "../config";
+import { APP_NAME, DOMAIN } from "../config";
 
 /** 接続承認ページを HTML 文書として描画する。 */
 export async function renderConsentPage(props: {
@@ -17,7 +17,7 @@ function ConsentPage({ details, handle }: { details: ConsentDescription; handle:
     <html lang="ja">
       <head>
         <meta charset="utf-8" />
-        <title>Email Aliases 接続承認</title>
+        <title>{APP_NAME} 接続承認</title>
       </head>
       <body>
         <h1>{details.clientName} の接続を許可しますか？</h1>

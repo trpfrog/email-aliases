@@ -1,4 +1,7 @@
-export const DOMAIN = "mail.example.com";
+import { app } from "../app.config";
+
+export const APP_NAME = app.name;
+export const DOMAIN = app.mailDomain;
 export const ADMIN_USERNAME = "admin";
 export const MCP_PATH = "/mcp";
 export const AUTHORIZE_PATH = "/authorize";

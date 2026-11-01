@@ -1,22 +1,10 @@
 import { createTheme } from "@mantine/core";
+import { app } from "../../app.config";
 
 export const theme = createTheme({
-  primaryColor: "forest",
-  primaryShade: 7,
-  colors: {
-    forest: [
-      "#f0f7f1",
-      "#e0ede2",
-      "#c1d9c6",
-      "#9bc3a5",
-      "#73aa83",
-      "#539367",
-      "#3b7c52",
-      "#276349",
-      "#20513c",
-      "#193e2f",
-    ],
-  },
+  primaryColor: "brand",
+  primaryShade: app.theme.primaryShade,
+  colors: { brand: app.theme.primaryColor },
   fontFamily:
     '-apple-system, BlinkMacSystemFont, "Helvetica Neue", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif',
   defaultRadius: "md",
