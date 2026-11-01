@@ -3,17 +3,14 @@
 import { execFileSync, spawn } from "node:child_process";
 import { Writable } from "node:stream";
 
-// op が失敗したら空の Secret でデプロイしないよう、ここで例外にして止める
-const secrets = execFileSync("op", ["inject", "--in-file", ".prod.vars.tpl"], {
-  encoding: "utf8",
-  stdio: ["inherit", "pipe", "inherit"],
-});
+// op が失敗したら空の値でデプロイしないよう、ここで例外にして止める
+const op = (...args: string[]) =>
+  execFileSync("op", args, { encoding: "utf8", stdio: ["inherit", "pipe", "inherit"] });
+
+const secrets = op("inject", "--in-file", ".prod.vars.tpl");
 
 // メールのドメインは Secret ではなくビルド時に埋め込む値なので、別に読んで環境変数で渡す
-const mailDomain = execFileSync("op", ["read", "op://Production/email-aliases/MAIL_DOMAIN"], {
-  encoding: "utf8",
-  stdio: ["inherit", "pipe", "inherit"],
-}).trim();
+const mailDomain = op("read", "op://Production/email-aliases/MAIL_DOMAIN").trim();
 
 const deploy = spawn("cf", ["deploy", "--secrets-file", "/dev/fd/3", ...process.argv.slice(2)], {
   stdio: ["inherit", "inherit", "inherit", "pipe"],

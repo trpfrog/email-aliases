@@ -1,7 +1,14 @@
 import { OAuthProvider } from "@cloudflare/workers-oauth-provider";
 import { z } from "zod";
 import { createAliasStore } from "./aliases/store";
-import { AUTHORIZE_PATH, MANAGE_SCOPE, MCP_PATH, OAUTH_SCOPES } from "./config";
+import {
+  AUTHORIZE_PATH,
+  MANAGE_SCOPE,
+  MCP_PATH,
+  OAUTH_SCOPES,
+  REGISTER_PATH,
+  TOKEN_PATH,
+} from "./config";
 import { receiveEmail } from "./email/receive";
 import { requirePublicOrigin, type Env } from "./env";
 import { app } from "./http/app";
@@ -12,11 +19,6 @@ import { handleMcpRequest } from "./mcp/handler";
 const authenticatedContext = z.object({
   auth: z.object({ token: z.string(), audience: z.string(), scope: z.array(z.string()) }),
 });
-
-const TOKEN_PATH = "/oauth/token";
-const REGISTER_PATH = "/oauth/register";
-// 認証なしで呼べ、KV への書き込みを伴うエンドポイント
-const RATE_LIMITED_OAUTH_PATHS = new Set([TOKEN_PATH, REGISTER_PATH]);
 
 const mcp = {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
@@ -31,7 +33,9 @@ const mcp = {
 
 export default {
   async fetch(request, env, ctx) {
-    if (RATE_LIMITED_OAUTH_PATHS.has(new URL(request.url).pathname)) {
+    // 認証なしで呼べ、KV への書き込みを伴うエンドポイントを制限する
+    const { pathname } = new URL(request.url);
+    if (pathname === TOKEN_PATH || pathname === REGISTER_PATH) {
       const limited = await rateLimitByIp(env.OAUTH_RATE_LIMIT, request);
       if (limited !== undefined) return limited;
     }
