@@ -1,7 +1,7 @@
 # Email Aliases
 
 独自ドメインの Catch-all アドレス（`*@mail.example.com`）の受信許可リストを管理する、個人用の MCP サーバー。
-ドメイン・表示名・テーマカラーは `app.config.ts` で変更できる（[設定](#設定)）。
+ドメイン・表示名・テーマカラー・デプロイ先は `app.config.ts` で変更できる。
 
 ```mermaid
 flowchart LR
@@ -50,25 +50,6 @@ Worker は `fetch`（HTTP）と `email`（Email Routing）の 2 つのハンド�
 - ローカルパートは ASCII のドット区切り（最大 64 文字）のみ。`*` は使えない。
 - 転送先は全アドレス共通の `FORWARD_TO`。
 
-## 設定
-
-自分の環境で使うときは `app.config.ts` だけを編集する。
-
-| 項目                     | 内容                                                     |
-| ------------------------ | -------------------------------------------------------- |
-| `app.name`               | 管理画面・承認ページ・`<title>` に表示する名前           |
-| `app.mailDomain`         | 管理するドメイン。このドメイン宛てのメールだけを転送する |
-| `app.theme.primaryColor` | 管理画面のメインカラー（Mantine の 10 段階のパレット）   |
-| `app.theme.primaryShade` | ボタンなどに使うパレットの段階（0〜9）                   |
-| `app.theme.browserColor` | `<meta name="theme-color">` の色                         |
-| `deploy.workerName`      | Worker 名                                                |
-| `deploy.publicOrigin`    | 本番の公開 URL（末尾 `/` なし）                          |
-| `deploy.d1DatabaseId`    | 本番の D1 database ID                                    |
-| `deploy.kvNamespaceId`   | 本番の OAuth 用 KV namespace ID                          |
-
-パレットは [Mantine の Colors generator](https://mantine.dev/colors-generator/) で作れる。
-転送先（`FORWARD_TO`）と管理者パスワード（`ADMIN_PASSWORD`）は秘密情報なので `.dev.vars` に置く。
-
 ## ローカル開発
 
 Node.js 24 以降と pnpm 10 が必要。
@@ -105,7 +86,7 @@ vp run build
    pnpm exec cf kv namespaces create --title email-aliases-oauth
    ```
 
-2. `app.config.ts` の `app` と `deploy` を自分の環境に合わせて編集する（[設定](#設定)）。
+2. `app.config.ts` の `app` と `deploy` を自分の環境に合わせて編集する。
 
 3. マイグレーションを適用する（DB 名ではなく database ID を指定）。
 
