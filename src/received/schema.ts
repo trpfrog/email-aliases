@@ -31,6 +31,17 @@ export type ReceivedEmail = z.output<typeof receivedEmailSchema>;
 export const receivedFilterSchema = z.enum(["all", "forwarded", "dropped", "disabled", "unknown"]);
 export type ReceivedFilter = z.output<typeof receivedFilterSchema>;
 
+/** エイリアスごとの受信状況。件数は保持期間（180 日）内の履歴から数える。 */
+export const aliasActivitySchema = z.object({
+  address: z.string(),
+  disabled_at: z.string().nullable(),
+  last_received_at: z.string().nullable(),
+  received_count_30d: z.int(),
+  received_count: z.int(),
+});
+
+export type AliasActivity = z.output<typeof aliasActivitySchema>;
+
 // ---- 操作の入力 ----
 
 export const listReceivedEmailsInput = z.strictObject({
@@ -44,7 +55,14 @@ export const receivedEmailIdInput = z.strictObject({ id: z.int().min(1) });
 // 誤って全件を消さないよう、一括削除では絞り込みを省略できないようにする
 export const clearReceivedEmailsInput = z.strictObject({ filter: receivedFilterSchema });
 
+export const listAliasActivityInput = z.strictObject({
+  sort: z.enum(["least_recent", "most_received_30d"]).default("least_recent"),
+  limit: z.int().min(1).max(100).default(100),
+  offset: z.int().min(0).default(0),
+});
+
 export type ListReceivedEmailsInput = z.output<typeof listReceivedEmailsInput>;
+export type ListAliasActivityInput = z.output<typeof listAliasActivityInput>;
 
 // ---- 操作の結果（MCP の outputSchema にも使う） ----
 
@@ -55,6 +73,12 @@ export const listReceivedEmailsResult = z.object({
 export const deleteReceivedEmailResult = z.object({ id: z.int(), deleted: z.boolean() });
 export const clearReceivedEmailsResult = z.object({ deleted: z.int() });
 
+export const listAliasActivityResult = z.object({
+  aliases: z.array(aliasActivitySchema),
+  next_offset: z.int().nullable(),
+});
+
+export type ListAliasActivityResult = z.output<typeof listAliasActivityResult>;
 export type ListReceivedEmailsResult = z.output<typeof listReceivedEmailsResult>;
 export type DeleteReceivedEmailResult = z.output<typeof deleteReceivedEmailResult>;
 export type ClearReceivedEmailsResult = z.output<typeof clearReceivedEmailsResult>;

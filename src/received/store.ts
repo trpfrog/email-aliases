@@ -4,12 +4,15 @@ import {
   clearReceivedRows,
   deleteReceivedRow,
   insertReceivedEmail,
+  listAliasActivityRows,
   listReceivedRows,
 } from "./queries";
 import {
   RECEIVED_LIMITS,
   type ClearReceivedEmailsResult,
   type DeleteReceivedEmailResult,
+  type ListAliasActivityInput,
+  type ListAliasActivityResult,
   type ListReceivedEmailsInput,
   type ListReceivedEmailsResult,
   type ReceivedFilter,
@@ -30,6 +33,8 @@ export interface ReceivedEmailStore {
   delete(id: number): Promise<DeleteReceivedEmailResult>;
   /** 絞り込みに一致する履歴をまとめて削除する。 */
   clear(filter: ReceivedFilter): Promise<ClearReceivedEmailsResult>;
+  /** 登録済みのエイリアスごとの受信状況。受信のないエイリアスも含める。 */
+  activity(input: ListAliasActivityInput): Promise<ListAliasActivityResult>;
 }
 
 export function createReceivedEmailStore(db: SqliteClient): ReceivedEmailStore {
@@ -56,6 +61,15 @@ export function createReceivedEmailStore(db: SqliteClient): ReceivedEmailStore {
 
     async clear(filter) {
       return { deleted: await clearReceivedRows(db, filter) };
+    },
+
+    async activity({ sort, limit, offset }) {
+      // 1 件多く取得して、次のページの有無を判定する
+      const rows = await listAliasActivityRows(db, { sort, limit: limit + 1, offset });
+      return {
+        aliases: rows.slice(0, limit),
+        next_offset: rows.length > limit ? offset + limit : null,
+      };
     },
   };
 }

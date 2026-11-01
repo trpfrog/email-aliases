@@ -28,6 +28,7 @@ const it = baseIt
     list: vi.fn<ReceivedEmailStore["list"]>(),
     delete: vi.fn<ReceivedEmailStore["delete"]>(),
     clear: vi.fn<ReceivedEmailStore["clear"]>(),
+    activity: vi.fn<ReceivedEmailStore["activity"]>(),
   }))
   .extend(
     "request",

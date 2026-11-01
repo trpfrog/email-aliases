@@ -40,16 +40,17 @@ Worker は `fetch`（HTTP）と `email`（Email Routing）の 2 つのハンド�
 
 ## MCP ツール
 
-| ツール                  | 入力                                                         | 動作                                                                           |
-| ----------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------ |
-| `create_alias`          | `address`, `note?`, `service_url?`                           | 受信を許可。既存アドレスは変更しない                                           |
-| `list_aliases`          | `query?`, `status?`, `has_service_url?`, `limit?`, `offset?` | 一覧・検索。`query` はアドレス・メモ・URL の部分一致。`next_offset` で次ページ |
-| `delete_alias`          | `address`                                                    | 登録を削除。以後のメールを drop                                                |
-| `set_alias_disabled`    | `address`, `disabled`                                        | 転送の停止・再開。登録情報は保持                                               |
-| `update_alias_details`  | `address`, `note?`, `service_url?`                           | メモ・サービス URL を編集。省略項目は保持、空文字で消去                        |
-| `list_received_emails`  | `filter?`, `limit?`, `offset?`                               | 受信履歴を新しい順に一覧。`filter` で結果を絞り込む                            |
-| `delete_received_email` | `id`                                                         | 受信履歴を 1 件削除                                                            |
-| `clear_received_emails` | `filter`                                                     | 絞り込みに一致する受信履歴をまとめて削除                                       |
+| ツール                  | 入力                                                         | 動作                                                                                              |
+| ----------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| `create_alias`          | `address`, `note?`, `service_url?`                           | 受信を許可。既存アドレスは変更しない                                                              |
+| `list_aliases`          | `query?`, `status?`, `has_service_url?`, `limit?`, `offset?` | 一覧・検索。`query` はアドレス・メモ・URL の部分一致。`next_offset` で次ページ                    |
+| `delete_alias`          | `address`                                                    | 登録を削除。以後のメールを drop                                                                   |
+| `set_alias_disabled`    | `address`, `disabled`                                        | 転送の停止・再開。登録情報は保持                                                                  |
+| `update_alias_details`  | `address`, `note?`, `service_url?`                           | メモ・サービス URL を編集。省略項目は保持、空文字で消去                                           |
+| `list_received_emails`  | `filter?`, `limit?`, `offset?`                               | 受信履歴を新しい順に一覧。`filter` で結果を絞り込む                                               |
+| `delete_received_email` | `id`                                                         | 受信履歴を 1 件削除                                                                               |
+| `clear_received_emails` | `filter`                                                     | 絞り込みに一致する受信履歴をまとめて削除                                                          |
+| `list_alias_activity`   | `sort?`, `limit?`, `offset?`                                 | エイリアスごとの最終受信・直近 30 日と 180 日の受信件数。使われていないものや受信の多いものを探す |
 
 - `address` は `shopping@mail.example.com` のような完全なアドレス。完全一致で判定するため `shopping+news` は別扱い。
 - ローカルパートは ASCII のドット区切り（最大 64 文字）のみ。`*` は使えない。

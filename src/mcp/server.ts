@@ -18,6 +18,8 @@ import {
   clearReceivedEmailsInput,
   clearReceivedEmailsResult,
   deleteReceivedEmailResult,
+  listAliasActivityInput,
+  listAliasActivityResult,
   listReceivedEmailsInput,
   listReceivedEmailsResult,
   RECEIVED_LIMITS,
@@ -140,6 +142,18 @@ export function createMcpServer({
       annotations: readOnly,
     },
     (input) => respond(listReceivedEmailsResult, received.list(input)),
+  );
+
+  server.registerTool(
+    "list_alias_activity",
+    {
+      description:
+        'List how often each registered alias receives email, including aliases that never received any. Counts cover every outcome (forwarded and dropped) within the 180-day history; received_count_30d covers the last 30 days. sort is "least_recent" (aliases with no or the oldest last email first; useful for finding unused aliases) or "most_received_30d" (useful for finding aliases that attract spam). Use next_offset as offset to fetch the next page.',
+      inputSchema: listAliasActivityInput,
+      outputSchema: listAliasActivityResult,
+      annotations: readOnly,
+    },
+    (input) => respond(listAliasActivityResult, received.activity(input)),
   );
 
   server.registerTool(
