@@ -18,6 +18,8 @@ import {
   clearReceivedEmailsInput,
   clearReceivedEmailsResult,
   deleteReceivedEmailResult,
+  listAliasActivityInput,
+  listAliasActivityResult,
   listReceivedEmailsInput,
   listReceivedEmailsResult,
   RECEIVED_LIMITS,
@@ -87,7 +89,7 @@ export function createMcpServer({
     "list_aliases",
     {
       description:
-        "List email aliases, including disabled aliases, ordered by address. disabled_at is null when enabled and contains the disabling timestamp when forwarding is stopped. Use next_offset as offset to fetch the next page.",
+        "List or search email aliases, ordered by address. query matches part of the address, note, or service_url (case-insensitive for ASCII); pass a full address to look up one alias. status filters by enabled or disabled (default: all). has_service_url filters by whether a service URL is set. disabled_at is null when enabled and contains the disabling timestamp when forwarding is stopped. Use next_offset as offset to fetch the next page.",
       inputSchema: listAliasesInput,
       outputSchema: listAliasesResult,
       annotations: readOnly,
@@ -140,6 +142,18 @@ export function createMcpServer({
       annotations: readOnly,
     },
     (input) => respond(listReceivedEmailsResult, received.list(input)),
+  );
+
+  server.registerTool(
+    "list_alias_activity",
+    {
+      description:
+        'List how often each registered alias receives email, including aliases that never received any. Counts cover every outcome (forwarded and dropped) within the 180-day history; received_count_30d covers the last 30 days. sort is "least_recent" (aliases with no or the oldest last email first; useful for finding unused aliases) or "most_received_30d" (useful for finding aliases that attract spam). Use next_offset as offset to fetch the next page.',
+      inputSchema: listAliasActivityInput,
+      outputSchema: listAliasActivityResult,
+      annotations: readOnly,
+    },
+    (input) => respond(listAliasActivityResult, received.activity(input)),
   );
 
   server.registerTool(

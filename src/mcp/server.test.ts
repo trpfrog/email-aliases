@@ -46,6 +46,7 @@ describe("MCP ツール", () => {
       }),
       delete_alias: expect.objectContaining({ destructiveHint: true }),
       list_received_emails: expect.objectContaining({ readOnlyHint: true }),
+      list_alias_activity: expect.objectContaining({ readOnlyHint: true }),
       delete_received_email: expect.objectContaining({ destructiveHint: true }),
       clear_received_emails: expect.objectContaining({ destructiveHint: true }),
     });
@@ -156,8 +157,11 @@ describe("MCP ツール", () => {
     { name: "delete_alias", arguments: { address: "*" } },
     { name: "list_aliases", arguments: { limit: 101 } },
     { name: "list_aliases", arguments: { offset: -1 } },
+    { name: "list_aliases", arguments: { status: "on" } },
+    { name: "list_aliases", arguments: { query: "x".repeat(201) } },
     { name: "list_received_emails", arguments: { filter: "spam" } },
     { name: "delete_received_email", arguments: { id: 0 } },
+    { name: "list_alias_activity", arguments: { sort: "random" } },
     { name: "clear_received_emails", arguments: {} },
     { name: "update_alias_details", arguments: { address: "shop@mail.example.test" } },
     {

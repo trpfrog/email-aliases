@@ -55,9 +55,9 @@ export function createAliasStore(db: SqliteClient): AliasStore {
       return { created: false, alias: existing };
     },
 
-    async list({ limit, offset }) {
+    async list({ limit, offset, ...filter }) {
       // 1 件多く取得して、次のページの有無を判定する
-      const rows = await listAliasRows(db, { limit: limit + 1, offset });
+      const rows = await listAliasRows(db, { ...filter, limit: limit + 1, offset });
       return {
         aliases: rows.slice(0, limit),
         next_offset: rows.length > limit ? offset + limit : null,

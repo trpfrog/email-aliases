@@ -164,6 +164,12 @@ describe("管理 API", () => {
     const list = await request("/api/aliases?offset=0&_=cache-buster");
     expect(listAliasesResult.parse(await list.json()).aliases).toHaveLength(1);
     expect((await request("/api/aliases?offset=-1")).status).toBe(400);
+    const filtered = async (query: string) =>
+      listAliasesResult.parse(await (await request(`/api/aliases?${query}`)).json()).aliases;
+    expect(await filtered("query=SHOP&status=disabled&has_service_url=true")).toHaveLength(1);
+    expect(await filtered("status=enabled")).toEqual([]);
+    expect(await filtered("has_service_url=false")).toEqual([]);
+    expect((await request("/api/aliases?has_service_url=yes")).status).toBe(400);
 
     expect((await api("DELETE", { address })).status).toBe(200);
     expect(listAliasesResult.parse(await (await request("/api/aliases")).json()).aliases).toEqual(

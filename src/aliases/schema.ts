@@ -60,7 +60,15 @@ export const createAliasInput = z.strictObject({
   service_url: serviceUrlSchema.default(""),
 });
 
+export const aliasStatusFilterSchema = z.enum(["all", "enabled", "disabled"]);
+export type AliasStatusFilter = z.output<typeof aliasStatusFilterSchema>;
+
 export const listAliasesInput = z.strictObject({
+  /** address・note・service_url の部分一致。空文字なら絞り込まない。 */
+  query: z.string().trim().max(200).default(""),
+  status: aliasStatusFilterSchema.default("all"),
+  /** 省略すると、サービス URL の有無で絞り込まない。 */
+  has_service_url: z.boolean().optional(),
   limit: z.int().min(1).max(100).default(100),
   offset: z.int().min(0).default(0),
 });

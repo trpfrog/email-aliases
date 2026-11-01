@@ -28,6 +28,7 @@ const it = baseIt
     list: vi.fn<ReceivedEmailStore["list"]>(),
     delete: vi.fn<ReceivedEmailStore["delete"]>(),
     clear: vi.fn<ReceivedEmailStore["clear"]>(),
+    activity: vi.fn<ReceivedEmailStore["activity"]>(),
   }))
   .extend(
     "request",
@@ -113,7 +114,12 @@ describe("MCP の HTTP ハンドラー", () => {
         aliases: [],
         next_offset: null,
       });
-      expect(aliases.list).toHaveBeenCalledExactlyOnceWith({ limit: 100, offset: 0 });
+      expect(aliases.list).toHaveBeenCalledExactlyOnceWith({
+        query: "",
+        status: "all",
+        limit: 100,
+        offset: 0,
+      });
     },
   );
 

@@ -1,5 +1,5 @@
 import type { SqliteClient } from "reylo";
-import type { Alias, AliasAddress } from "./schema";
+import type { Alias, AliasAddress, AliasStatusFilter } from "./schema";
 import createQuery from "./queries/create.sql";
 import deleteQuery from "./queries/delete.sql";
 import getQuery from "./queries/get.sql";
@@ -23,12 +23,30 @@ export function findAlias(db: SqliteClient, address: AliasAddress): Promise<Alia
   return getQuery.run(db, { address });
 }
 
-/** アドレス順に `limit` 件まで返す。 */
+/** 絞り込みに一致するエイリアスを、アドレス順に `limit` 件まで返す。 */
 export function listAliasRows(
   db: SqliteClient,
-  { limit, offset }: { limit: number; offset: number },
+  {
+    query,
+    status,
+    has_service_url,
+    limit,
+    offset,
+  }: {
+    query: string;
+    status: AliasStatusFilter;
+    has_service_url?: boolean | undefined;
+    limit: number;
+    offset: number;
+  },
 ): Promise<Alias[]> {
-  return listQuery.run(db, { limit, offset });
+  return listQuery.run(db, {
+    query,
+    status,
+    has_service_url: has_service_url === undefined ? -1 : has_service_url ? 1 : 0,
+    limit,
+    offset,
+  });
 }
 
 /** 無効化を繰り返しても最初の無効化日時を保つ。未登録なら null。 */

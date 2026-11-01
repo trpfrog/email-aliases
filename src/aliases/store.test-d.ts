@@ -25,6 +25,13 @@ test("SQL が返す行の型が Alias と一致する", () => {
 test("SQL の引数が queries.ts の呼び出し方と一致する", () => {
   expectTypeOf<Params<typeof getQuery>>().toEqualTypeOf<{ address: string }>();
   expectTypeOf<Params<typeof deleteQuery>>().toEqualTypeOf<{ address: string }>();
+  expectTypeOf<Params<typeof listQuery>>().toEqualTypeOf<{
+    query: string;
+    status: string;
+    has_service_url: number;
+    limit: number;
+    offset: number;
+  }>();
   expectTypeOf<Params<typeof createQuery>>().toEqualTypeOf<{
     address: string;
     note: string;

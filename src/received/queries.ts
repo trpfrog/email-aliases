@@ -3,10 +3,13 @@ import type { AliasAddress } from "../aliases/schema";
 import {
   RECEIVED_LIMITS,
   receivedEmailSchema,
+  type AliasActivity,
+  type ListAliasActivityInput,
   type ReceivedEmail,
   type ReceivedFilter,
   type ReceivedOutcome,
 } from "./schema";
+import activityQuery from "./queries/activity.sql";
 import clearQuery from "./queries/clear.sql";
 import deleteQuery from "./queries/delete.sql";
 import listQuery from "./queries/list.sql";
@@ -37,6 +40,14 @@ export async function listReceivedRows(
 ): Promise<ReceivedEmail[]> {
   const rows = await listQuery.run(db, { filter, limit, offset });
   return rows.map((row) => receivedEmailSchema.parse(row));
+}
+
+/** 登録済みのエイリアスごとの受信状況を、`sort` の順に `limit` 件まで返す。 */
+export function listAliasActivityRows(
+  db: SqliteClient,
+  input: ListAliasActivityInput,
+): Promise<AliasActivity[]> {
+  return activityQuery.run(db, input);
 }
 
 /** 削除したら true。 */
