@@ -1,0 +1,7 @@
+version: 2
+updates:
+  # actions.lock に載せたワークフローは、Dependabot が lockfile も同じ PR で更新する
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

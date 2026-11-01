@@ -109,6 +109,23 @@ vp run build
 
 6. Email Routing でメールのドメインの Catch-all の転送先をこの Worker に変更する。切り替え後、D1 にない宛先はすべて drop される。
 
+## CI/CD（GitHub Actions）
+
+- **CI**（`.github/workflows/ci.yml`）：PR と main への push で、`vp run check`・`vp run test`・`vp run test:e2e` を実行する。
+- **Deploy**（`.github/workflows/deploy.yml`）：Actions タブの「Run workflow」から手動で実行する。main からのみ実行でき、次の順に進む。
+  1. check と単体テスト
+  2. 本番 D1 へのマイグレーション（`vp run db:migrate:prod`）
+  3. デプロイ（`vp run deploy:prod`）
+
+Deploy ワークフローは、1Password の Service Account で本番の値を読む。初回だけ次を用意する。
+
+1. 1Password で `Production` 保管庫を読み取り専用で参照できる Service Account を作り、GitHub リポジトリの Environment `production` の Secret `OP_SERVICE_ACCOUNT_TOKEN` に登録する。
+   Environment に承認者を設定すると、実行前に承認を求められる。
+2. `Production` 保管庫にアイテム `email-aliases-deploy` を作り、次のフィールドを置く。
+   - `CLOUDFLARE_API_TOKEN`：Workers Scripts・D1・Workers KV Storage の編集権限を持つ API トークン
+   - `CLOUDFLARE_ACCOUNT_ID`：Cloudflare のアカウント ID
+3. Worker Secrets と `MAIL_DOMAIN` は、手元のデプロイと同じアイテム `email-aliases` から読む。
+
 ## ChatGPT から接続
 
 ChatGPT の MCP 接続で `https://<worker-origin>/mcp` を指定し、認証に OAuth を選ぶ。
