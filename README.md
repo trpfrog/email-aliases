@@ -117,6 +117,15 @@ vp run build
   2. 本番 D1 へのマイグレーション（`vp run db:migrate:prod`）
   3. デプロイ（`vp run deploy:prod`）
 
+Action の依存は [ワークフローの lockfile](https://gh.io/actions-lockfile)（`.github/workflows/actions.lock`、public preview）でコミットに固定している。`uses:` はタグで書き、変更したら lockfile を作り直す。CI の `Verify actions.lock` が、lockfile とワークフローが一致しているかを検査する。Dependabot が Action を更新するときは、lockfile も同じ PR で更新される。
+
+```sh
+gh extension install github/gh-actions-lock
+gh actions-lock          # uses: を変えた後に実行する
+```
+
+ローカルの composite action は `uses: $/.github/actions/...` で参照する（`./` だと lockfile が中の依存を辿れないため）。
+
 Deploy ワークフローは、1Password の Service Account で本番の値を読む。初回だけ次を用意する。
 
 1. 1Password で `Production` 保管庫を読み取り専用で参照できる Service Account を作り、GitHub リポジトリの Environment `production` の Secret `OP_SERVICE_ACCOUNT_TOKEN` に登録する。
