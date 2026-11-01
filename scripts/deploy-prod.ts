@@ -18,6 +18,10 @@ const op = (...args: string[]) =>
 // メールのドメインは Secret ではなくビルド時に埋め込む値なので、別に読んで環境変数で渡す
 const mailDomain = op("read", "op://Production/email-aliases/MAIL_DOMAIN").trim();
 
+// Deploy ワークフローがリリースのバージョンを渡したときは、Worker のバージョン履歴にタグとして残す
+const appVersion = process.env.APP_VERSION?.trim() ?? "";
+const versionArgs = appVersion === "" ? [] : ["--tag", `v${appVersion}`];
+
 const keys = readFileSync(TEMPLATE, "utf8")
   .split("\n")
   .map((line) => line.trim())
@@ -43,6 +47,7 @@ try {
       "deploy",
       "--secrets-file",
       keysFile,
+      ...versionArgs,
       ...process.argv.slice(2),
     ],
     { stdio: "inherit", env: { ...process.env, MAIL_DOMAIN: mailDomain } },

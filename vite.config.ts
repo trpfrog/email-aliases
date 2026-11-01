@@ -11,8 +11,15 @@ import { deploy } from "./deploy.config.ts";
 const envMailDomain = process.env.MAIL_DOMAIN?.trim() ?? "";
 const mailDomain = envMailDomain === "" ? app.mailDomain : envMailDomain;
 
+/** リリースのバージョン。Deploy ワークフローが GitHub Release のタグ（`v` を除く）を渡す */
+const envAppVersion = process.env.APP_VERSION?.trim() ?? "";
+const appVersion = envAppVersion === "" ? "0.0.0-dev" : envAppVersion;
+
 export default defineConfig({
-  define: { BUILD_MAIL_DOMAIN: JSON.stringify(mailDomain) },
+  define: {
+    BUILD_MAIL_DOMAIN: JSON.stringify(mailDomain),
+    BUILD_APP_VERSION: JSON.stringify(appVersion),
+  },
   lint: {
     plugins: ["typescript", "unicorn", "oxc", "react", "import", "vitest"],
     categories: { correctness: "error", suspicious: "error" },
@@ -85,7 +92,7 @@ export default defineConfig({
       build: {
         command: "cf build",
         dependsOn: ["db:prepare"],
-        cache: { env: ["MAIL_DOMAIN"], output: [".cloudflare/output/**"] },
+        cache: { env: ["MAIL_DOMAIN", "APP_VERSION"], output: [".cloudflare/output/**"] },
       },
       deploy: { command: "cf deploy", dependsOn: ["db:prepare"], cache: false },
       // 1Password の Production 保管庫の Secret と一緒にデプロイする
