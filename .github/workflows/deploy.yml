@@ -29,7 +29,7 @@ jobs:
 
       # Cloudflare の認証情報だけを環境変数に読み込む。Worker Secrets は deploy-prod.ts が読む
       - name: Load Cloudflare credentials
-        uses: 1password/load-secrets-action@v5.0.1
+        uses: 1password/load-secrets-action@5.0.1
         with:
           export-env: true
           version: 2.41.1
