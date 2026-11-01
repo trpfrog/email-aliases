@@ -9,8 +9,15 @@ const secrets = execFileSync("op", ["inject", "--in-file", ".prod.vars.tpl"], {
   stdio: ["inherit", "pipe", "inherit"],
 });
 
+// メールのドメインは Secret ではなくビルド時に埋め込む値なので、別に読んで環境変数で渡す
+const mailDomain = execFileSync("op", ["read", "op://Production/email-aliases/MAIL_DOMAIN"], {
+  encoding: "utf8",
+  stdio: ["inherit", "pipe", "inherit"],
+}).trim();
+
 const deploy = spawn("cf", ["deploy", "--secrets-file", "/dev/fd/3", ...process.argv.slice(2)], {
   stdio: ["inherit", "inherit", "inherit", "pipe"],
+  env: { ...process.env, MAIL_DOMAIN: mailDomain },
 });
 const pipe = deploy.stdio[3];
 if (!(pipe instanceof Writable)) throw new Error("cf に Secret を渡すパイプを開けませんでした");

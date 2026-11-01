@@ -6,7 +6,12 @@ import react from "@vitejs/plugin-react-swc";
 import { LOCAL_D1_ID } from "./cloudflare.config";
 import { app } from "./app.config.ts";
 
+/** 本番のドメインをリポジトリに載せないよう、ビルド時の環境変数で app.config.ts の値を上書きできる */
+const envMailDomain = process.env.MAIL_DOMAIN?.trim() ?? "";
+const mailDomain = envMailDomain === "" ? app.mailDomain : envMailDomain;
+
 export default defineConfig({
+  define: { BUILD_MAIL_DOMAIN: JSON.stringify(mailDomain) },
   lint: {
     plugins: ["typescript", "unicorn", "oxc", "react", "import", "vitest"],
     categories: { correctness: "error", suspicious: "error" },
@@ -74,7 +79,7 @@ export default defineConfig({
       build: {
         command: "cf build",
         dependsOn: ["db:prepare"],
-        cache: { output: [".cloudflare/output/**"] },
+        cache: { env: ["MAIL_DOMAIN"], output: [".cloudflare/output/**"] },
       },
       deploy: { command: "cf deploy", dependsOn: ["db:prepare"], cache: false },
       // 1Password の Production 保管庫の Secret と一緒にデプロイする

@@ -1,7 +1,7 @@
 # Email Aliases
 
 独自ドメインの Catch-all アドレス（`*@mail.example.com`）の受信許可リストを管理する、個人用の MCP サーバー。
-ドメイン・表示名・テーマカラーは `app.config.ts`、デプロイ先は `deploy.config.ts` で変更できる。
+ドメイン・表示名・テーマカラーは `app.config.ts`、デプロイ先は `deploy.config.ts` で変更できる。ドメインはビルド時の環境変数 `MAIL_DOMAIN` でも上書きでき、リポジトリに載せずに済む。
 
 ```mermaid
 flowchart LR
@@ -95,7 +95,7 @@ vp run build
    ```
 
 4. 本番用の値を 1Password の `Production` 保管庫の Login アイテム `email-aliases` に置き、デプロイする（値は Worker Secrets としてアップロードされる）。
-   ユーザー名は `admin`、パスワードは `ADMIN_PASSWORD`、ウェブサイトは公開 URL、カスタムフィールド `FORWARD_TO` は転送先にする。ローカル用は `Development` 保管庫に同じ形で置く。
+   ユーザー名は `admin`、パスワードは `ADMIN_PASSWORD`、ウェブサイトは公開 URL、カスタムフィールド `FORWARD_TO` は転送先、`MAIL_DOMAIN` はメールのドメインにする。`MAIL_DOMAIN` は Secret ではなく、ビルド時に埋め込む。ローカル用は `Development` 保管庫に同じ形で置く。
    項目は `.prod.vars.tpl` のとおり。公開 URL（`PUBLIC_ORIGIN`、末尾 `/` なし）もリポジトリに載せないよう、ここに置く。
    `FORWARD_TO` は Email Routing で確認済みのアドレスにする。
 
@@ -103,11 +103,11 @@ vp run build
    vp run deploy:prod
    ```
 
-   1Password を使わない場合は、`.prod.vars.tpl` をコミットされない `.prod.vars` にコピーして値を書き、`vp run deploy --secrets-file .prod.vars` でデプロイする。
+   1Password を使わない場合は、`.prod.vars.tpl` をコミットされない `.prod.vars` にコピーして値を書き、`MAIL_DOMAIN=<ドメイン> vp run deploy --secrets-file .prod.vars` でデプロイする（`app.config.ts` にドメインを書いた場合は `MAIL_DOMAIN` は不要）。
 
 5. ChatGPT から接続し、使用中のアドレスを **先に** `create_alias` で登録する。
 
-6. Email Routing で `app.mailDomain` の Catch-all の転送先をこの Worker に変更する。切り替え後、D1 にない宛先はすべて drop される。
+6. Email Routing でメールのドメインの Catch-all の転送先をこの Worker に変更する。切り替え後、D1 にない宛先はすべて drop される。
 
 ## ChatGPT から接続
 

@@ -9,6 +9,7 @@ export const app = defineApp({
   name: "Email Aliases",
   // Email Routing の Catch-all を設定したドメイン
   // このドメイン宛てのメールだけを転送する
+  // ビルド時に環境変数 MAIL_DOMAIN があればそちらを使う（vp run deploy:prod は 1Password から渡す）
   mailDomain: "mail.example.com",
   theme: {
     // 管理画面のメインカラー
