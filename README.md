@@ -11,10 +11,10 @@ flowchart LR
   Worker -->|未登録・無効| Drop[drop]
 
   ChatGPT -->|OAuth| MCP["/mcp"]
-  Admin["管理画面 /<br/>(Basic 認証)"] --> API["/api/aliases"]
+  Admin["管理画面 /<br/>(Basic 認証)"] --> API["/api/aliases<br/>/api/received"]
   MCP --> D1[(D1)]
   API --> D1
-  Worker -.->|宛先を照会| D1
+  Worker -.->|宛先を照会・受信履歴を記録| D1
 ```
 
 Cloudflare Workers / D1 / KV（OAuth 用）/ Hono / React / Mantine / Reylo / Vite+
@@ -23,32 +23,47 @@ Cloudflare Workers / D1 / KV（OAuth 用）/ Hono / React / Mantine / Reylo / Vi
 
 Worker は `fetch`（HTTP）と `email`（Email Routing）の 2 つのハンドラーを持つ。
 
-| 入口                    | 認証  | 内容                                             |
-| ----------------------- | ----- | ------------------------------------------------ |
-| `email` ハンドラー      | なし  | Catch-all で受けたメールを転送または drop        |
-| `/mcp`                  | OAuth | MCP（Streamable HTTP、ステートレス）             |
-| `/.well-known/oauth-*`  | なし  | OAuth のメタデータ（OAuthProvider が自動で返す） |
-| `/oauth/register`       | なし  | クライアント登録（DCR）                          |
-| `/oauth/token`          | なし  | トークン発行・更新                               |
-| `/authorize`            | Basic | 接続承認ページ                                   |
-| `/`                     | Basic | 管理画面（React SPA）                            |
-| `/api/aliases`          | Basic | 管理 API（GET・POST・PATCH・DELETE）             |
-| `/api/aliases/disabled` | Basic | 管理 API（PUT で有効・無効を切り替え）           |
-| `/health`               | なし  | 死活確認                                         |
+| 入口                    | 認証  | 内容                                                     |
+| ----------------------- | ----- | -------------------------------------------------------- |
+| `email` ハンドラー      | なし  | Catch-all で受けたメールを転送または drop し、履歴に記録 |
+| `/mcp`                  | OAuth | MCP（Streamable HTTP、ステートレス）                     |
+| `/.well-known/oauth-*`  | なし  | OAuth のメタデータ（OAuthProvider が自動で返す）         |
+| `/oauth/register`       | なし  | クライアント登録（DCR）                                  |
+| `/oauth/token`          | なし  | トークン発行・更新                                       |
+| `/authorize`            | Basic | 接続承認ページ                                           |
+| `/`                     | Basic | 管理画面（React SPA）                                    |
+| `/api/aliases`          | Basic | 管理 API（GET・POST・PATCH・DELETE）                     |
+| `/api/aliases/disabled` | Basic | 管理 API（PUT で有効・無効を切り替え）                   |
+| `/api/received`         | Basic | 受信履歴（GET で一覧、DELETE で 1 件削除）               |
+| `/api/received/clear`   | Basic | 受信履歴（POST で絞り込みに一致する行を削除）            |
+| `/health`               | なし  | 死活確認                                                 |
 
 ## MCP ツール
 
-| ツール                 | 入力                               | 動作                                                    |
-| ---------------------- | ---------------------------------- | ------------------------------------------------------- |
-| `create_alias`         | `address`, `note?`, `service_url?` | 受信を許可。既存アドレスは変更しない                    |
-| `list_aliases`         | `limit?`, `offset?`                | 無効なものも含めて一覧。`next_offset` で次ページ        |
-| `delete_alias`         | `address`                          | 登録を削除。以後のメールを drop                         |
-| `set_alias_disabled`   | `address`, `disabled`              | 転送の停止・再開。登録情報は保持                        |
-| `update_alias_details` | `address`, `note?`, `service_url?` | メモ・サービス URL を編集。省略項目は保持、空文字で消去 |
+| ツール                  | 入力                               | 動作                                                    |
+| ----------------------- | ---------------------------------- | ------------------------------------------------------- |
+| `create_alias`          | `address`, `note?`, `service_url?` | 受信を許可。既存アドレスは変更しない                    |
+| `list_aliases`          | `limit?`, `offset?`                | 無効なものも含めて一覧。`next_offset` で次ページ        |
+| `delete_alias`          | `address`                          | 登録を削除。以後のメールを drop                         |
+| `set_alias_disabled`    | `address`, `disabled`              | 転送の停止・再開。登録情報は保持                        |
+| `update_alias_details`  | `address`, `note?`, `service_url?` | メモ・サービス URL を編集。省略項目は保持、空文字で消去 |
+| `list_received_emails`  | `filter?`, `limit?`, `offset?`     | 受信履歴を新しい順に一覧。`filter` で結果を絞り込む     |
+| `delete_received_email` | `id`                               | 受信履歴を 1 件削除                                     |
+| `clear_received_emails` | `filter`                           | 絞り込みに一致する受信履歴をまとめて削除                |
 
 - `address` は `shopping@mail.example.com` のような完全なアドレス。完全一致で判定するため `shopping+news` は別扱い。
 - ローカルパートは ASCII のドット区切り（最大 64 文字）のみ。`*` は使えない。
 - 転送先は全アドレス共通の `FORWARD_TO`。
+
+## 受信履歴
+
+自ドメイン宛てに届いたメールを、転送したかどうかにかかわらず記録する。管理画面の「受信履歴」タブで、ドロップしたものに絞って登録漏れを確認し、そのままエイリアスとして登録できる。
+
+- 記録するのは受信日時・宛先・送信元（エンベロープの From、320 文字まで）・サイズ・結果。件名や本文は保存しない。
+- 結果は `forwarded`（転送）・`disabled`（無効なエイリアス宛てで drop）・`unknown`（未登録の宛先で drop）。`filter` の `dropped` は後ろの 2 つをまとめたもの。
+- 自ドメイン以外や形式が不正な宛先は記録しない。
+- 未登録の宛先は攻撃に使われやすいため、直近 1 時間に新しい宛先が 10 件、または未登録宛ての受信が 100 件に達すると、それ以降は記録せずに drop する。
+- 180 日を過ぎた履歴は、受信のたびに D1 のトリガーが削除する。
 
 ## ローカル開発
 
@@ -72,8 +87,8 @@ vp run build
 
 ### 開発メモ
 
-- SQL は `src/aliases/queries/*.sql` に置き、Reylo が型を推論する。そのため TypeScript 7.1 Beta を固定している。
-- `any`・`as`・`!` は lint で禁止。例外は Reylo の型を受け取る `src/aliases/store.ts` のみで、型の一致は `store.test-d.ts` で検査する。
+- SQL は `src/aliases/queries/*.sql` と `src/received/queries/*.sql` に置き、Reylo が型を推論する。そのため TypeScript 7.1 Beta を固定している。
+- `any`・`as`・`!` は lint で禁止。例外は Reylo の型を受け取る `src/aliases/queries.ts`・`src/received/queries.ts` のみで、型の一致は各 `store.test-d.ts` で検査する。
 - VS Code で `.sql` の import が解決できない場合は、拡張 **TypeScript 7**（`TypeScriptTeam.native-preview`）でワークスペースの TypeScript を使う。それでも駄目なら Node 24 で VS Code を起動し直す（`mise exec node@24.14.0 -- code .`）。
 
 ## 本番への配置
