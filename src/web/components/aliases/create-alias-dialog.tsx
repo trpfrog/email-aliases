@@ -9,9 +9,12 @@ import { AliasDetailsFields, DETAILS_FIELD } from "./alias-details-fields";
 import { AliasModal } from "./alias-modal";
 
 export function CreateAliasDialog({
+  defaultLocalPart = "",
   onClose,
   onCreate,
 }: {
+  /** 受信履歴から登録するときに、@ より前の部分をあらかじめ入力しておく。 */
+  defaultLocalPart?: string;
   onClose: () => void;
   onCreate: (input: CreateAliasRequest) => Promise<void>;
 }) {
@@ -35,6 +38,7 @@ export function CreateAliasDialog({
           <TextInput
             label="アドレス"
             name="address"
+            defaultValue={defaultLocalPart}
             placeholder="shopping"
             description="@ より前の部分を入力してください"
             rightSection={

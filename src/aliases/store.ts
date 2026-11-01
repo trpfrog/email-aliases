@@ -20,10 +20,12 @@ import type {
   UpdateAliasResult,
 } from "./schema";
 
+export type AliasStatus = "enabled" | "disabled" | "missing";
+
 /** エイリアスの操作。MCP・管理 API・メール受信が共有する。 */
 export interface AliasStore {
-  /** 登録済みかつ有効なら true。 */
-  isEnabled(address: AliasAddress): Promise<boolean>;
+  /** 登録の有無と有効・無効。 */
+  status(address: AliasAddress): Promise<AliasStatus>;
   /** 既存のアドレスは変更せず、そのまま返す。 */
   create(input: CreateAliasInput): Promise<CreateAliasResult>;
   list(input: ListAliasesInput): Promise<ListAliasesResult>;
@@ -36,9 +38,10 @@ export interface AliasStore {
 
 export function createAliasStore(db: SqliteClient): AliasStore {
   return {
-    async isEnabled(address) {
+    async status(address) {
       const alias = await findAlias(db, address);
-      return alias !== null && alias.disabled_at === null;
+      if (alias === null) return "missing";
+      return alias.disabled_at === null ? "enabled" : "disabled";
     },
 
     async create(input) {

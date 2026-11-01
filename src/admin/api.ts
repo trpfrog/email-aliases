@@ -12,10 +12,19 @@ import {
 import { createAliasStore, type AliasStore } from "../aliases/store";
 import { requirePublicOrigin, type Env } from "../env";
 import { validate } from "../http/validate";
+import {
+  clearReceivedEmailsInput,
+  listReceivedEmailsInput,
+  receivedEmailIdInput,
+} from "../received/schema";
+import { createReceivedEmailStore, type ReceivedEmailStore } from "../received/store";
 
 const NOT_FOUND = "エイリアスが見つかりません。";
 
-type AdminEnv = { Bindings: Env; Variables: { aliases: AliasStore } };
+type AdminEnv = {
+  Bindings: Env;
+  Variables: { aliases: AliasStore; received: ReceivedEmailStore };
+};
 
 // クエリ文字列は数字の文字列として受け取り、MCP と同じ範囲・既定値で検証する
 const integerString = z.string().regex(/^\d+$/).transform(Number);
@@ -24,8 +33,15 @@ const listAliasesQuery = z.object({
   offset: integerString.optional().pipe(listAliasesInput.shape.offset),
 });
 
-const withAliasStore = createMiddleware<AdminEnv>(async (c, next) => {
+const listReceivedEmailsQuery = z.object({
+  filter: listReceivedEmailsInput.shape.filter,
+  limit: integerString.optional().pipe(listReceivedEmailsInput.shape.limit),
+  offset: integerString.optional().pipe(listReceivedEmailsInput.shape.offset),
+});
+
+const withStores = createMiddleware<AdminEnv>(async (c, next) => {
   c.set("aliases", createAliasStore(c.env.DB));
+  c.set("received", createReceivedEmailStore(c.env.DB));
   await next();
 });
 
@@ -46,7 +62,7 @@ const requireSameOriginJson = createMiddleware<AdminEnv>(async (c, next) => {
 /** 管理画面向けの JSON API。型は `AdminApi` として `hono/client` と共有する。認証は呼び出し側で行う。 */
 export const adminApi = new Hono<AdminEnv>()
   .basePath("/api")
-  .use(withAliasStore, requireSameOriginJson)
+  .use(withStores, requireSameOriginJson)
   .get(
     "/aliases",
     validate("query", listAliasesQuery, "ページ指定を確認してください。"),
@@ -80,6 +96,21 @@ export const adminApi = new Hono<AdminEnv>()
   )
   .delete("/aliases", validate("json", addressInput, "アドレスを確認してください。"), async (c) =>
     c.json(await c.var.aliases.delete(c.req.valid("json").address), 200),
+  )
+  .get(
+    "/received",
+    validate("query", listReceivedEmailsQuery, "絞り込みとページ指定を確認してください。"),
+    async (c) => c.json(await c.var.received.list(c.req.valid("query")), 200),
+  )
+  .delete(
+    "/received",
+    validate("json", receivedEmailIdInput, "ID を確認してください。"),
+    async (c) => c.json(await c.var.received.delete(c.req.valid("json").id), 200),
+  )
+  .post(
+    "/received/clear",
+    validate("json", clearReceivedEmailsInput, "絞り込みを確認してください。"),
+    async (c) => c.json(await c.var.received.clear(c.req.valid("json").filter), 200),
   );
 
 adminApi.onError((error, c) => {
