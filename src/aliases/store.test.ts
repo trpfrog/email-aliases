@@ -12,7 +12,7 @@ describe("エイリアスの store", () => {
   it("作成したエイリアスを返し、既存のアドレスは変更しない", async ({ store }) => {
     const created = await store.create(
       newAlias({
-        address: "shop@mail.example.com",
+        address: "shop@mail.example.test",
         note: "メモ",
         service_url: "https://a.example",
       }),
@@ -20,7 +20,7 @@ describe("エイリアスの store", () => {
     expect(created).toMatchObject({
       created: true,
       alias: {
-        address: "shop@mail.example.com",
+        address: "shop@mail.example.test",
         note: "メモ",
         service_url: "https://a.example",
         disabled_at: null,
@@ -28,10 +28,10 @@ describe("エイリアスの store", () => {
       },
     });
 
-    await store.setDisabled({ address: address("shop@mail.example.com"), disabled: true });
+    await store.setDisabled({ address: address("shop@mail.example.test"), disabled: true });
     const duplicate = await store.create(
       newAlias({
-        address: "SHOP@mail.example.com",
+        address: "SHOP@mail.example.test",
         note: "上書き",
         service_url: "https://b.example",
       }),
@@ -44,23 +44,23 @@ describe("エイリアスの store", () => {
 
   it("アドレス順に一覧し、next_offset でページ分割する", async ({ store }) => {
     for (const local of ["beta", "alpha", "gamma"]) {
-      await store.create(newAlias({ address: `${local}@mail.example.com` }));
+      await store.create(newAlias({ address: `${local}@mail.example.test` }));
     }
 
     const first = await store.list({ limit: 2, offset: 0 });
     expect(first.aliases.map((alias) => alias.address)).toEqual([
-      "alpha@mail.example.com",
-      "beta@mail.example.com",
+      "alpha@mail.example.test",
+      "beta@mail.example.test",
     ]);
     expect(first.next_offset).toBe(2);
 
     const last = await store.list({ limit: 2, offset: 2 });
-    expect(last.aliases.map((alias) => alias.address)).toEqual(["gamma@mail.example.com"]);
+    expect(last.aliases.map((alias) => alias.address)).toEqual(["gamma@mail.example.test"]);
     expect(last.next_offset).toBeNull();
   });
 
   it("無効化しても登録情報を保ち、最初の無効化日時を維持して再有効化できる", async ({ store }) => {
-    const target = address("toggle@mail.example.com");
+    const target = address("toggle@mail.example.test");
     const { alias: original } = await store.create(newAlias({ address: target, note: "残す" }));
     expect(await store.isEnabled(target)).toBe(true);
 
@@ -80,7 +80,7 @@ describe("エイリアスの store", () => {
   });
 
   it("指定した項目だけを更新し、空文字で消去する", async ({ store }) => {
-    const target = "notes@mail.example.com";
+    const target = "notes@mail.example.test";
     await store.create(newAlias({ address: target, note: "元", service_url: "https://a.example" }));
     await store.setDisabled({ address: address(target), disabled: true });
 
@@ -101,7 +101,7 @@ describe("エイリアスの store", () => {
   });
 
   it("未登録のアドレスは更新・削除せず、有効とみなさない", async ({ store }) => {
-    const missing = address("missing@mail.example.com");
+    const missing = address("missing@mail.example.test");
     expect(await store.isEnabled(missing)).toBe(false);
     expect(await store.setDisabled({ address: missing, disabled: false })).toEqual({
       updated: false,
@@ -115,7 +115,7 @@ describe("エイリアスの store", () => {
   });
 
   it("削除したアドレスは有効でなくなる", async ({ store }) => {
-    const target = address("gone@mail.example.com");
+    const target = address("gone@mail.example.test");
     await store.create(newAlias({ address: target }));
     expect(await store.delete(target)).toEqual({ address: target, deleted: true });
     expect(await store.isEnabled(target)).toBe(false);
@@ -123,7 +123,7 @@ describe("エイリアスの store", () => {
 
   it("データベースのエラーを呼び出し元に伝える", async ({ db, store }) => {
     db.exec("DROP TABLE aliases");
-    await expect(store.isEnabled(address("shop@mail.example.com"))).rejects.toThrow(
+    await expect(store.isEnabled(address("shop@mail.example.test"))).rejects.toThrow(
       /no such table/,
     );
   });

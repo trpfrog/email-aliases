@@ -42,12 +42,12 @@ describe("MCP ツール", () => {
   });
 
   it("作成・一覧・更新・削除の結果を構造化して返す", async ({ client }) => {
-    const address = "shop@mail.example.com";
+    const address = "shop@mail.example.test";
 
     const created = await client.callTool({
       name: "create_alias",
       arguments: {
-        address: "Shop@mail.example.com",
+        address: "Shop@mail.example.test",
         note: "メモ",
         service_url: " https://a.example ",
       },
@@ -97,15 +97,15 @@ describe("MCP ツール", () => {
     { name: "create_alias", arguments: { address: "wrong@other.example" } },
     {
       name: "create_alias",
-      arguments: { address: "shop@mail.example.com", note: "x".repeat(1001) },
+      arguments: { address: "shop@mail.example.test", note: "x".repeat(1001) },
     },
     { name: "delete_alias", arguments: { address: "*" } },
     { name: "list_aliases", arguments: { limit: 101 } },
     { name: "list_aliases", arguments: { offset: -1 } },
-    { name: "update_alias_details", arguments: { address: "shop@mail.example.com" } },
+    { name: "update_alias_details", arguments: { address: "shop@mail.example.test" } },
     {
       name: "update_alias_details",
-      arguments: { address: "shop@mail.example.com", service_url: "javascript:alert(1)" },
+      arguments: { address: "shop@mail.example.test", service_url: "javascript:alert(1)" },
     },
   ])("$name への不正な入力 $arguments をツールエラーにする", async (params, { client }) => {
     expect((await client.callTool(params)).isError).toBe(true);

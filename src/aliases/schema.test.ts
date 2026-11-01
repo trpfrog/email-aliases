@@ -11,20 +11,22 @@ describe("アドレスの検証", () => {
     "",
     "shop",
     "*",
-    "a..b@mail.example.com",
-    ".a@mail.example.com",
-    "a.@mail.example.com",
+    "a..b@mail.example.test",
+    ".a@mail.example.test",
+    "a.@mail.example.test",
     "a@other.example",
-    "a@@mail.example.com",
-    "a b@mail.example.com",
-    "あ@mail.example.com",
-    `${"x".repeat(65)}@mail.example.com`,
+    "a@@mail.example.test",
+    "a b@mail.example.test",
+    "あ@mail.example.test",
+    `${"x".repeat(65)}@mail.example.test`,
   ])("不正なアドレス %j を拒否する", (input) => {
     expect(addressSchema.safeParse(input).success).toBe(false);
   });
 
   it("使用可能な記号を維持し、前後の空白を除いて小文字に揃える", () => {
-    expect(addressSchema.parse(" Shop+News@MAIL.TRPFROG.NET ")).toBe("shop+news@mail.example.com");
+    expect(addressSchema.parse(" Shop+News@MAIL.EXAMPLE.TEST ")).toBe(
+      "shop+news@mail.example.test",
+    );
   });
 });
 
@@ -50,7 +52,7 @@ describe("サービス URL の検証", () => {
 });
 
 describe("更新内容の検証", () => {
-  const address = "shop@mail.example.com";
+  const address = "shop@mail.example.test";
 
   it.each([
     { address },

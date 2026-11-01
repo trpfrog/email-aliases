@@ -19,30 +19,30 @@ const it = dbTest
 
 describe("メールの受信", () => {
   it("有効な登録済みの宛先だけを転送する", async ({ aliases, forward, receive }) => {
-    await receive("shop@mail.example.com");
+    await receive("shop@mail.example.test");
     expect(forward).not.toHaveBeenCalled();
 
-    await aliases.create(newAlias({ address: "Shop@mail.example.com" }));
-    await receive("SHOP@mail.example.com");
+    await aliases.create(newAlias({ address: "Shop@mail.example.test" }));
+    await receive("SHOP@mail.example.test");
     expect(forward).toHaveBeenCalledExactlyOnceWith("inbox@example.com");
 
     forward.mockClear();
     await aliases.setDisabled({
-      address: address("shop@mail.example.com"),
+      address: address("shop@mail.example.test"),
       disabled: true,
     });
-    await receive("shop@mail.example.com");
+    await receive("shop@mail.example.test");
     expect(forward).not.toHaveBeenCalled();
   });
 
   it("プラスタグも含めて完全なアドレスで一致を判定する", async ({ aliases, forward, receive }) => {
-    await aliases.create(newAlias({ address: "shop@mail.example.com" }));
+    await aliases.create(newAlias({ address: "shop@mail.example.test" }));
 
     for (const to of [
       "shop",
       "shop@other.example",
-      "shop+tag@mail.example.com",
-      "other@mail.example.com",
+      "shop+tag@mail.example.test",
+      "other@mail.example.test",
     ]) {
       await receive(to);
     }
@@ -55,30 +55,30 @@ describe("メールの受信", () => {
     forward,
     receive,
   }) => {
-    await aliases.create(newAlias({ address: "shop@mail.example.com" }));
+    await aliases.create(newAlias({ address: "shop@mail.example.test" }));
 
     forward.mockRejectedValueOnce(new Error("forward unavailable"));
-    await expect(receive("shop@mail.example.com")).rejects.toThrow("forward unavailable");
+    await expect(receive("shop@mail.example.test")).rejects.toThrow("forward unavailable");
 
     db.exec("DROP TABLE aliases");
-    await expect(receive("shop@mail.example.com")).rejects.toThrow(/no such table/);
+    await expect(receive("shop@mail.example.test")).rejects.toThrow(/no such table/);
   });
 
   it("転送先の設定がなければ、未登録の宛先でもエラーにして誤設定に気付けるようにする", async ({
     forward,
     receive,
   }) => {
-    await expect(receive("unknown@mail.example.com", { forwardTo: undefined })).rejects.toThrow(
+    await expect(receive("unknown@mail.example.test", { forwardTo: undefined })).rejects.toThrow(
       /FORWARD_TO/,
     );
     expect(forward).not.toHaveBeenCalled();
   });
 
-  it.for([undefined, "", "  ", "other@mail.example.com", "Other@MAIL.trpfrog.net"])(
+  it.for([undefined, "", "  ", "other@mail.example.test", "Other@MAIL.EXAMPLE.TEST"])(
     "転送先 %j は設定の誤りとしてエラーにする",
     async (forwardTo, { aliases, forward, receive }) => {
-      await aliases.create(newAlias({ address: "shop@mail.example.com" }));
-      await expect(receive("shop@mail.example.com", { forwardTo })).rejects.toThrow(/FORWARD_TO/);
+      await aliases.create(newAlias({ address: "shop@mail.example.test" }));
+      await expect(receive("shop@mail.example.test", { forwardTo })).rejects.toThrow(/FORWARD_TO/);
       expect(forward).not.toHaveBeenCalled();
     },
   );

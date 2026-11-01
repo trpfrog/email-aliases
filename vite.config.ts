@@ -139,6 +139,7 @@ export default defineConfig({
         extends: true,
         test: {
           name: "unit",
+          setupFiles: ["src/test/setup.ts"],
           include: ["src/**/*.test.ts"],
           exclude: ["src/**/*.integration.test.ts"],
           alias: {

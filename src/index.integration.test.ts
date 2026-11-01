@@ -17,6 +17,7 @@ import {
   listAliasesResult,
   updateAliasResult,
 } from "./aliases/schema";
+import { MAIL_DOMAIN } from "./config";
 
 const run = promisify(execFile);
 const root = join(import.meta.dirname, "..");
@@ -189,7 +190,7 @@ const rawPost = (body: string, headers: Record<string, string> = {}) =>
   });
 
 describe("React 管理画面と API", () => {
-  const address = "admin-test@mail.example.com";
+  const address = `admin-test@${MAIL_DOMAIN}`;
   const input = { address, note: "管理画面テスト", service_url: "https://example.com/settings" };
 
   test("認証なしのアクセスを拒否し、認証後はキャッシュさせずに画面を返す", async () => {
@@ -230,7 +231,7 @@ describe("React 管理画面と API", () => {
     const setDisabled = (disabled: boolean, target = address) =>
       aliases.disabled.$put({ json: { address: target, disabled } });
 
-    expect((await setDisabled(true, "missing@mail.example.com")).status).toBe(404);
+    expect((await setDisabled(true, `missing@${MAIL_DOMAIN}`)).status).toBe(404);
 
     const disabled = updateAliasResult.parse(await (await setDisabled(true)).json());
     expect(disabled.alias).toMatchObject({ disabled_at: expect.any(String), note: input.note });
@@ -397,7 +398,7 @@ describe("OAuth と MCP", () => {
       "update_alias_details",
     ]);
 
-    const address = "test-alias@mail.example.com";
+    const address = `test-alias@${MAIL_DOMAIN}`;
     expect(createAliasResult.parse(await callTool("create_alias", { address })).created).toBe(true);
     expect(listAliasesResult.parse(await callTool("list_aliases", {})).aliases).toContainEqual(
       expect.objectContaining({ address }),

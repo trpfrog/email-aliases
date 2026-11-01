@@ -39,7 +39,7 @@ const it = dbTest
         }),
   );
 
-const address = "shop@mail.example.com";
+const address = "shop@mail.example.test";
 const DISABLED_PATH = "/api/aliases/disabled";
 
 describe("管理画面", () => {
@@ -119,12 +119,12 @@ describe("管理 API", () => {
       (
         await api(
           "PUT",
-          { address: "missing@mail.example.com", disabled: true },
+          { address: "missing@mail.example.test", disabled: true },
           { path: DISABLED_PATH },
         )
       ).status,
     ).toBe(404);
-    expect((await api("PATCH", { address: "missing@mail.example.com", note: "x" })).status).toBe(
+    expect((await api("PATCH", { address: "missing@mail.example.test", note: "x" })).status).toBe(
       404,
     );
 
