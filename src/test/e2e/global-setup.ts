@@ -13,9 +13,9 @@ import { LOCAL_D1_ID } from "../../../cloudflare.config";
 
 declare module "vite-plus/test" {
   interface ProvidedContext {
-    /** E2E テスト用に起動した Worker のオリジン。 */
+    /** E2E テスト用に起動した Worker のオリジン */
     e2eOrigin: string;
-    /** E2E テスト用の Worker に設定した管理者パスワード。 */
+    /** E2E テスト用の Worker に設定した管理者パスワード */
     e2eAdminPassword: string;
   }
 }
@@ -35,69 +35,75 @@ async function findFreePort(): Promise<number> {
   return port;
 }
 
-/** 実際のシークレットやローカルの D1/KV に干渉しないよう、一時ディレクトリのコピーで Worker を起動する。 */
+/** 実際のシークレットやローカルの D1/KV に干渉しないよう、一時ディレクトリのコピーで Worker を起動する */
 async function startDevServer(password: string): Promise<DevServer> {
   const workspace = await mkdtemp(join(tmpdir(), "email-aliases-test-"));
-  for (const file of [
-    "package.json",
-    "tsconfig.json",
-    "app.config.ts",
-    "deploy.config.ts",
-    "cloudflare.config.ts",
-    "vite.config.ts",
-    "index.html",
-    ".reylo.yaml",
-    "scripts",
-    "src",
-    "migrations",
-  ]) {
-    await cp(join(root, file), join(workspace, file), { recursive: true });
-  }
-  await symlink(join(root, "node_modules"), join(workspace, "node_modules"), "dir");
-
-  const port = await findFreePort();
-  const origin = `http://localhost:${port}`;
-  await writeFile(
-    join(workspace, ".dev.vars"),
-    `ADMIN_PASSWORD=${password}\nFORWARD_TO=inbox@example.com\n`,
-  );
-
-  const { VITEST: _vitest, ...parentEnv } = process.env;
-  const options = {
-    cwd: workspace,
-    env: { ...parentEnv, CI: "1", NO_COLOR: "1", DEV_PUBLIC_ORIGIN: origin },
-  };
-
-  await run(process.execPath, [join(workspace, "scripts/prepare-db.ts")], options);
-  await run(
-    cli,
-    [
-      "d1",
+  try {
+    for (const file of [
+      "package.json",
+      "tsconfig.json",
+      "app.config.ts",
+      "deploy.config.ts",
+      "cloudflare.config.ts",
+      "vite.config.ts",
+      "index.html",
+      ".reylo.yaml",
+      "scripts",
+      "src",
       "migrations",
-      "apply",
-      LOCAL_D1_ID,
-      "--local",
-      "--persist-to",
-      ".cloudflare/state",
-      "--mode",
-      "development",
-    ],
-    { ...options, timeout: 30000 },
-  );
+    ]) {
+      await cp(join(root, file), join(workspace, file), { recursive: true });
+    }
+    await symlink(join(root, "node_modules"), join(workspace, "node_modules"), "dir");
 
-  const worker = spawn(cli, ["dev", "--port", String(port)], {
-    ...options,
-    detached: true,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-  let logs = "";
-  for (const stream of [worker.stdout, worker.stderr]) {
-    stream.on("data", (chunk: Buffer) => {
-      logs = (logs + chunk.toString()).slice(-16000);
+    const port = await findFreePort();
+    const origin = `http://localhost:${port}`;
+    await writeFile(
+      join(workspace, ".dev.vars"),
+      `ADMIN_PASSWORD=${password}\nFORWARD_TO=inbox@example.com\n`,
+    );
+
+    const { VITEST: _vitest, ...parentEnv } = process.env;
+    const options = {
+      cwd: workspace,
+      env: { ...parentEnv, CI: "1", NO_COLOR: "1", DEV_PUBLIC_ORIGIN: origin },
+    };
+
+    await run(process.execPath, [join(workspace, "scripts/prepare-db.ts")], options);
+    await run(
+      cli,
+      [
+        "d1",
+        "migrations",
+        "apply",
+        LOCAL_D1_ID,
+        "--local",
+        "--persist-to",
+        ".cloudflare/state",
+        "--mode",
+        "development",
+      ],
+      { ...options, timeout: 30000 },
+    );
+
+    const worker = spawn(cli, ["dev", "--port", String(port)], {
+      ...options,
+      detached: true,
+      stdio: ["ignore", "pipe", "pipe"],
     });
-  }
+    let logs = "";
+    for (const stream of [worker.stdout, worker.stderr]) {
+      stream.on("data", (chunk: Buffer) => {
+        logs = (logs + chunk.toString()).slice(-16000);
+      });
+    }
 
-  return { workspace, worker, origin, logs: () => logs };
+    return { workspace, worker, origin, logs: () => logs };
+  } catch (error) {
+    // Worker の起動前に失敗した場合も一時ディレクトリを残さない
+    await rm(workspace, { recursive: true, force: true });
+    throw error;
+  }
 }
 
 async function stopDevServer({ workspace, worker }: DevServer) {
@@ -126,7 +132,7 @@ async function waitUntilReady({ worker, origin, logs }: DevServer) {
       });
       if (response.ok) return;
     } catch {
-      // 起動前は接続を拒否されるので、次の試行まで待つ。
+      // 起動前は接続を拒否されるので、次の試行まで待つ
     }
     await setTimeout(100);
   }

@@ -1,6 +1,6 @@
 import { inject } from "vite-plus/test";
 
-/** global-setup.ts が起動した Worker のオリジン。 */
+/** global-setup.ts が起動した Worker のオリジン */
 export const base = inject("e2eOrigin");
 
 export const basicAuth = (user: string, pass: string) => `Basic ${btoa(`${user}:${pass}`)}`;
