@@ -25,6 +25,12 @@ const idempotentWrite: ToolAnnotations = {
 const idempotentDelete: ToolAnnotations = { ...idempotentWrite, destructiveHint: true };
 
 /**
+ * ツール引数に含められる要素数（オブジェクトのキーと配列の要素）の上限。
+ * どのツールも引数は数個のキーだけなので、深い・大きい入力を Zod の検証前に拒否する
+ */
+export const MAX_TOOL_INPUT_ELEMENTS = 16;
+
+/**
  * ツールの結果を返す。`outputSchema` に渡したスキーマを受け取り、結果の型がそれに従うことを検査する。
  * 入力の検証エラーは SDK が詳細を返す。store の失敗は内部の情報を含みうるため、ログに残して汎用のエラーを返す。
  */
@@ -45,7 +51,10 @@ async function respond<Output extends z.ZodObject>(
 }
 
 export function createMcpServer(aliases: AliasStore): McpServer {
-  const server = new McpServer({ name: "email-aliases", version: "0.1.0" });
+  const server = new McpServer(
+    { name: "email-aliases", version: "0.1.0" },
+    { maxToolInputElements: MAX_TOOL_INPUT_ELEMENTS },
+  );
 
   server.registerTool(
     "create_alias",

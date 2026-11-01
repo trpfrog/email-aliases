@@ -11,6 +11,12 @@ export type McpRequestContext = {
   publicOrigin: string;
 };
 
+/**
+ * MCP リクエストの本文の上限（バイト）。SDK の既定は 4 MiB だが、
+ * 最大の入力（メモ 1000 文字・URL 2048 文字）をエスケープしても十分に収まる大きさに絞る
+ */
+export const MAX_MCP_REQUEST_BODY_BYTES = 64 * 1024;
+
 /** ステートレスな Streamable HTTP として、リクエストごとに MCP サーバーを作って応答する。 */
 export async function handleMcpRequest(
   request: Request,
@@ -32,6 +38,7 @@ export async function handleMcpRequest(
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,
+    maxRequestBodySize: MAX_MCP_REQUEST_BODY_BYTES,
   });
   await server.connect(transport);
 

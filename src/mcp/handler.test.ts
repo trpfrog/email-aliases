@@ -3,7 +3,7 @@ import { describe, expect, it as baseIt, vi } from "vite-plus/test";
 import { z } from "zod";
 import type { AliasStore } from "../aliases/store";
 import { MANAGE_SCOPE } from "../config";
-import { handleMcpRequest } from "./handler";
+import { handleMcpRequest, MAX_MCP_REQUEST_BODY_BYTES } from "./handler";
 
 const origin = "https://aliases.example";
 
@@ -117,5 +117,16 @@ describe("MCP の HTTP ハンドラー", () => {
     const { result } = toolResponse.parse(await response.json());
     expect(result.isError).toBe(true);
     expect(JSON.stringify(result.content)).not.toContain("storage unavailable");
+  });
+
+  it("上限を超える本文をツールの実行前に 413 で拒否する", async ({ aliases, request }) => {
+    const response = await request("tools/call", {
+      name: "list_aliases",
+      arguments: {},
+      padding: "x".repeat(MAX_MCP_REQUEST_BODY_BYTES),
+    });
+
+    expect(response.status).toBe(413);
+    expect(aliases.list).not.toHaveBeenCalled();
   });
 });

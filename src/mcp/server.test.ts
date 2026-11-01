@@ -9,7 +9,7 @@ import {
 } from "../aliases/schema";
 import { createAliasStore } from "../aliases/store";
 import { dbTest } from "../test/fixtures";
-import { createMcpServer } from "./server";
+import { createMcpServer, MAX_TOOL_INPUT_ELEMENTS } from "./server";
 
 const it = dbTest.extend("client", async ({ db }, { onCleanup }) => {
   const server = createMcpServer(createAliasStore(db));
@@ -109,5 +109,17 @@ describe("MCP ツール", () => {
     },
   ])("$name への不正な入力 $arguments をツールエラーにする", async (params, { client }) => {
     expect((await client.callTool(params)).isError).toBe(true);
+  });
+
+  it("要素数が上限を超える引数を検証前に拒否する", async ({ client }) => {
+    const result = await client.callTool({
+      name: "list_aliases",
+      arguments: { offset: Array.from({ length: MAX_TOOL_INPUT_ELEMENTS }, () => 0) },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(JSON.stringify(result.content)).toContain(
+      `more than the maximum of ${MAX_TOOL_INPUT_ELEMENTS} elements`,
+    );
   });
 });
