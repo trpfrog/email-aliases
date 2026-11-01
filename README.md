@@ -128,12 +128,13 @@ gh actions-lock          # uses: を変えた後に実行する
 
 Deploy ワークフローは、1Password の Service Account で本番の値を読む。初回だけ次を用意する。
 
-1. 1Password で `Production` 保管庫を読み取り専用で参照できる Service Account を作り、GitHub リポジトリの Environment `production` の Secret `OP_SERVICE_ACCOUNT_TOKEN` に登録する。
-   Environment に承認者を設定すると、実行前に承認を求められる。
-2. `Production` 保管庫にアイテム `email-aliases-deploy` を作り、次のフィールドを置く。
+1. GitHub リポジトリに Environment `production` を作り、「Deployment branches and tags」で Branch の `main` だけを許可する。
+   ワークフローの `if:` は別のブランチで書き換えられるため、Secret を main 以外から読めないようにするにはこの設定が必須。承認者を設定すると、実行前に承認を求められる。
+2. 1Password で `Production` 保管庫を読み取り専用で参照できる Service Account を作り、Environment `production` の Secret `OP_SERVICE_ACCOUNT_TOKEN` に登録する。
+3. `Production` 保管庫にアイテム `email-aliases-deploy` を作り、次のフィールドを置く。
    - `CLOUDFLARE_API_TOKEN`：Workers Scripts・D1・Workers KV Storage の編集権限を持つ API トークン
    - `CLOUDFLARE_ACCOUNT_ID`：Cloudflare のアカウント ID
-3. Worker Secrets と `MAIL_DOMAIN` は、手元のデプロイと同じアイテム `email-aliases` から読む。
+4. Worker Secrets と `MAIL_DOMAIN` は、手元のデプロイと同じアイテム `email-aliases` から読む。
 
 ## ChatGPT から接続
 

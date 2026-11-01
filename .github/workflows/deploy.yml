@@ -15,7 +15,8 @@ concurrency:
 jobs:
   deploy:
     name: Deploy to production
-    # main 以外のブランチからは本番にデプロイしない
+    # main 以外のブランチからは本番にデプロイしない。
+    # この条件はワークフローを編集すれば外せるため、Environment の production 側でも main だけに制限している
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: production
@@ -31,6 +32,7 @@ jobs:
         uses: 1password/load-secrets-action@v5.0.1
         with:
           export-env: true
+          version: 2.41.1
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
           CLOUDFLARE_API_TOKEN: op://Production/email-aliases-deploy/CLOUDFLARE_API_TOKEN
@@ -38,6 +40,8 @@ jobs:
 
       # deploy-prod.ts が op inject・op read で Secret を解決する
       - uses: 1password/install-cli-action@v4.1.0
+        with:
+          version: 2.41.1
 
       # マイグレーションはどれも追加だけにしているため、旧コードが動いている間に適用しても壊れない
       - name: Apply D1 migrations
