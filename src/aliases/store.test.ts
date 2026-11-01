@@ -62,21 +62,21 @@ describe("エイリアスの store", () => {
   it("無効化しても登録情報を保ち、最初の無効化日時を維持して再有効化できる", async ({ store }) => {
     const target = address("toggle@mail.example.test");
     const { alias: original } = await store.create(newAlias({ address: target, note: "残す" }));
-    expect(await store.isEnabled(target)).toBe(true);
+    expect(await store.status(target)).toBe("enabled");
 
     const disabled = await store.setDisabled({ address: target, disabled: true });
     expect(disabled).toEqual({
       updated: true,
       alias: { ...original, disabled_at: expect.any(String) },
     });
-    expect(await store.isEnabled(target)).toBe(false);
+    expect(await store.status(target)).toBe("disabled");
     expect(await store.setDisabled({ address: target, disabled: true })).toEqual(disabled);
 
     expect(await store.setDisabled({ address: target, disabled: false })).toEqual({
       updated: true,
       alias: original,
     });
-    expect(await store.isEnabled(target)).toBe(true);
+    expect(await store.status(target)).toBe("enabled");
   });
 
   it("指定した項目だけを更新し、空文字で消去する", async ({ store }) => {
@@ -100,9 +100,9 @@ describe("エイリアスの store", () => {
     expect(both.alias).toMatchObject({ note: "", service_url: "https://b.example" });
   });
 
-  it("未登録のアドレスは更新・削除せず、有効とみなさない", async ({ store }) => {
+  it("未登録のアドレスは更新・削除せず、未登録として扱う", async ({ store }) => {
     const missing = address("missing@mail.example.test");
-    expect(await store.isEnabled(missing)).toBe(false);
+    expect(await store.status(missing)).toBe("missing");
     expect(await store.setDisabled({ address: missing, disabled: false })).toEqual({
       updated: false,
       alias: null,
@@ -118,13 +118,11 @@ describe("エイリアスの store", () => {
     const target = address("gone@mail.example.test");
     await store.create(newAlias({ address: target }));
     expect(await store.delete(target)).toEqual({ address: target, deleted: true });
-    expect(await store.isEnabled(target)).toBe(false);
+    expect(await store.status(target)).toBe("missing");
   });
 
   it("データベースのエラーを呼び出し元に伝える", async ({ db, store }) => {
     db.exec("DROP TABLE aliases");
-    await expect(store.isEnabled(address("shop@mail.example.test"))).rejects.toThrow(
-      /no such table/,
-    );
+    await expect(store.status(address("shop@mail.example.test"))).rejects.toThrow(/no such table/);
   });
 });

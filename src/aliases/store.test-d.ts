@@ -38,7 +38,7 @@ test("store の結果の型が MCP の outputSchema に収まる", () => {
 
 test("検証済みのアドレスだけを store に渡せる", () => {
   expectTypeOf<string>().not.toExtend<AliasAddress>();
-  expectTypeOf<Parameters<AliasStore["isEnabled"]>[0]>().toEqualTypeOf<AliasAddress>();
+  expectTypeOf<Parameters<AliasStore["status"]>[0]>().toEqualTypeOf<AliasAddress>();
   expectTypeOf<Parameters<AliasStore["delete"]>[0]>().toEqualTypeOf<AliasAddress>();
   expectTypeOf<Parameters<AliasStore["create"]>[0]["address"]>().toEqualTypeOf<AliasAddress>();
 });

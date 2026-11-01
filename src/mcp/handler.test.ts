@@ -15,7 +15,7 @@ const authFor = (scope: string[]): OAuthResourceAuth => ({
 
 const it = baseIt
   .extend("aliases", () => ({
-    isEnabled: vi.fn<AliasStore["isEnabled"]>().mockResolvedValue(false),
+    status: vi.fn<AliasStore["status"]>().mockResolvedValue("missing"),
     create: vi.fn<AliasStore["create"]>(),
     list: vi.fn<AliasStore["list"]>().mockResolvedValue({ aliases: [], next_offset: null }),
     setDisabled: vi.fn<AliasStore["setDisabled"]>(),

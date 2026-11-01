@@ -60,7 +60,12 @@ export default defineConfig({
       {
         // Reylo の SQL の型は tsc の content mapper でしか解決できず、tsgolint からは error 型に見える。
         // queries.ts が外向きの型を明示し、store.test-d.ts が tsc で推論結果との一致を検査する。
-        files: ["src/aliases/queries.ts", "src/aliases/store.test-d.ts"],
+        files: [
+          "src/aliases/queries.ts",
+          "src/aliases/store.test-d.ts",
+          "src/received/queries.ts",
+          "src/received/store.test-d.ts",
+        ],
         rules: {
           "typescript/no-unsafe-argument": "off",
           "typescript/no-unsafe-assignment": "off",

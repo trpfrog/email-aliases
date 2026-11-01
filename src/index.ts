@@ -14,6 +14,7 @@ import { requirePublicOrigin, type Env } from "./env";
 import { app } from "./http/app";
 import { rateLimitByIp } from "./http/rate-limit";
 import { handleMcpRequest } from "./mcp/handler";
+import { createReceivedEmailStore } from "./received/store";
 
 // OAuthProvider はトークンを検証した後に ctx.auth を設定するが、apiHandler の型には現れないため実行時に検証する
 const authenticatedContext = z.object({
@@ -59,6 +60,10 @@ export default {
   },
 
   email(message, env) {
-    return receiveEmail(message, { aliases: createAliasStore(env.DB), forwardTo: env.FORWARD_TO });
+    return receiveEmail(message, {
+      aliases: createAliasStore(env.DB),
+      received: createReceivedEmailStore(env.DB),
+      forwardTo: env.FORWARD_TO,
+    });
   },
 } satisfies ExportedHandler<Env>;
