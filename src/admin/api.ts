@@ -17,7 +17,7 @@ const NOT_FOUND = "エイリアスが見つかりません。";
 
 type AdminEnv = { Bindings: Env; Variables: { aliases: AliasStore } };
 
-// クエリ文字列は数字の文字列として受け取り、MCP と同じ範囲・既定値で検証する。
+// クエリ文字列は数字の文字列として受け取り、MCP と同じ範囲・既定値で検証する
 const integerString = z.string().regex(/^\d+$/).transform(Number);
 const listAliasesQuery = z.object({
   limit: integerString.optional().pipe(listAliasesInput.shape.limit),
@@ -83,7 +83,7 @@ export const adminApi = new Hono<AdminEnv>()
   );
 
 adminApi.onError((error, c) => {
-  // 不正な JSON など、Hono がリクエストを解釈できなかった場合。
+  // 不正な JSON など、Hono がリクエストを解釈できなかった場合
   if (error instanceof HTTPException) {
     return c.json({ error: "リクエストを解釈できませんでした。" }, error.status);
   }

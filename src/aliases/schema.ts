@@ -6,7 +6,7 @@ export const ALIAS_LIMITS = { localPart: 64, note: 1000, serviceUrl: 2048 } as c
 
 const LOCAL_PART = /^[a-z0-9!#$%&'+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'+/=?^_`{|}~-]+)*$/;
 
-// ドメインを含む完全なアドレスを受け付け、大文字・小文字を区別せず扱う。
+// ドメインを含む完全なアドレスを受け付け、大文字・小文字を区別せず扱う
 export const addressSchema = z
   .string()
   .trim()
@@ -26,7 +26,7 @@ export type AliasAddress = z.output<typeof addressSchema>;
 
 export const noteSchema = z.string().max(ALIAS_LIMITS.note);
 
-// 空文字は「未設定」を表す。
+// 空文字は「未設定」を表す
 export const serviceUrlSchema = z
   .string()
   .trim()

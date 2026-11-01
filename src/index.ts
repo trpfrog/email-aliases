@@ -7,7 +7,7 @@ import { requirePublicOrigin, type Env } from "./env";
 import { app } from "./http/app";
 import { handleMcpRequest } from "./mcp/handler";
 
-// OAuthProvider はトークンを検証した後に ctx.auth を設定するが、apiHandler の型には現れないため実行時に検証する。
+// OAuthProvider はトークンを検証した後に ctx.auth を設定するが、apiHandler の型には現れないため実行時に検証する
 const authenticatedContext = z.object({
   auth: z.object({ token: z.string(), audience: z.string(), scope: z.array(z.string()) }),
 });

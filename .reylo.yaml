@@ -1,2 +1,2 @@
-# db:prepare でマイグレーションから再作成する、開発用の一時スキーマ。
+# db:prepare でマイグレーションから再作成する、開発用の一時スキーマ
 direct_url: file:./.reylo/schema.sqlite

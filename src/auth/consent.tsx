@@ -7,7 +7,7 @@ export async function renderConsentPage(props: {
   details: ConsentDescription;
   handle: string;
 }): Promise<string> {
-  // hono/jsx の要素は非同期コンポーネントを含む場合 Promise になる。
+  // hono/jsx の要素は非同期コンポーネントを含む場合 Promise になる
   const page: JSX.Element = <ConsentPage {...props} />;
   return `<!doctype html>${await page}`;
 }

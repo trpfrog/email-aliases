@@ -36,7 +36,7 @@ export const authorize = new Hono<{ Bindings: Env }>()
         return new Response(null, { status: 302, headers: denied.headers });
       }
 
-      // ライブラリがブラウザーに紐づく使い捨てハンドル（CSRF 対策）とスコープを検証する。
+      // ライブラリがブラウザーに紐づく使い捨てハンドル（CSRF 対策）とスコープを検証する
       const approved = await oauth.approveConsent(c.req.raw, handle);
       const { redirectTo } = await oauth.completeAuthorization({
         request: approved.request,
@@ -52,7 +52,7 @@ export const authorize = new Hono<{ Bindings: Env }>()
   );
 
 authorize.onError((error, c) => {
-  // 解釈できないフォームなど、Hono がリクエストを拒否した場合。
+  // 解釈できないフォームなど、Hono がリクエストを拒否した場合
   if (error instanceof HTTPException) return error.getResponse();
   if (error instanceof AuthorizationError && error.redirectTo !== undefined) {
     return c.redirect(error.redirectTo, 302);

@@ -20,7 +20,7 @@ export function CreateAliasDialog({
   async function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    // UI では @ より前だけを入力し、ドメインを付けて送る。
+    // UI では @ より前だけを入力し、ドメインを付けて送る
     await action.run({
       address: `${readText(form, "address").trim()}@${MAIL_DOMAIN}`,
       note: readText(form, DETAILS_FIELD.note),

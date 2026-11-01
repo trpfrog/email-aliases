@@ -35,7 +35,7 @@ export default defineConfig({
       "typescript/return-await": ["error", "always"],
       "typescript/prefer-nullish-coalescing": "error",
       "typescript/consistent-type-imports": "error",
-      // 自動 JSX ランタイム（React・hono/jsx）では不要。
+      // 自動 JSX ランタイム（React・hono/jsx）では不要
       "react/react-in-jsx-scope": "off",
       "import/no-unassigned-import": ["error", { allow: ["**/*.css"] }],
       // `it.extend` で作った fixture 付きの `it` も test ブロックとして扱う。
@@ -48,7 +48,7 @@ export default defineConfig({
     },
     overrides: [
       {
-        // `expect.any()` などの非対称マッチャーが any を返すため、テストでは代入だけ許可する。
+        // `expect.any()` などの非対称マッチャーが any を返すため、テストでは代入だけ許可する
         files: ["**/*.test.ts", "**/*.test.tsx"],
         rules: { "typescript/no-unsafe-assignment": "off" },
       },
@@ -77,7 +77,7 @@ export default defineConfig({
         cache: { output: [".cloudflare/output/**"] },
       },
       deploy: { command: "cf deploy", dependsOn: ["db:prepare"], cache: false },
-      // sops で暗号化した secrets.prod.env を一時ファイルに復号し、Worker Secrets としてアップロードする。
+      // sops で暗号化した secrets.prod.env を一時ファイルに復号し、Worker Secrets としてアップロードする
       "deploy:prod": {
         command:
           "sops exec-file --no-fifo --filename .prod.vars secrets.prod.env 'cf deploy --secrets-file {}'",
@@ -111,7 +111,7 @@ export default defineConfig({
   },
   plugins: [
     {
-      // index.html の %APP_*% を app.config.ts の値に置き換える。
+      // index.html の %APP_*% を app.config.ts の値に置き換える
       name: "app-config-html",
       transformIndexHtml: (html) =>
         html
@@ -120,7 +120,7 @@ export default defineConfig({
     },
     reylo(),
     react({
-      // Hono の承認ページは既存の JSX 変換を使う。
+      // Hono の承認ページは既存の JSX 変換を使う
       parserConfig: (id) =>
         id.includes("/src/web/") && /\.tsx?$/.test(id)
           ? { syntax: "typescript", tsx: id.endsWith(".tsx") }
@@ -134,7 +134,7 @@ export default defineConfig({
     }).map((plugin) => ({
       ...plugin,
       applyToEnvironment: (environment) => environment.name === "client",
-      // SWC プラグインのグローバルな oxc 無効化をクライアントに限定する。
+      // SWC プラグインのグローバルな oxc 無効化をクライアントに限定する
       ...(plugin.name === "vite:react-swc" && plugin.apply === "serve"
         ? {
             config: () => ({ optimizeDeps: { include: ["react/jsx-dev-runtime"] } }),

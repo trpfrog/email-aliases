@@ -53,7 +53,7 @@ export function createAliasStore(db: SqliteClient): AliasStore {
     },
 
     async list({ limit, offset }) {
-      // 1 件多く取得して、次のページの有無を判定する。
+      // 1 件多く取得して、次のページの有無を判定する
       const rows = await listAliasRows(db, { limit: limit + 1, offset });
       return {
         aliases: rows.slice(0, limit),

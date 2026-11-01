@@ -9,7 +9,7 @@ export interface Env {
   PUBLIC_ORIGIN: string | undefined;
   ADMIN_PASSWORD: string | undefined;
   FORWARD_TO: string | undefined;
-  // OAuthProvider が defaultHandler の呼び出し前に設定する。
+  // OAuthProvider が defaultHandler の呼び出し前に設定する
   OAUTH_PROVIDER: OAuthHelpers;
 }
 

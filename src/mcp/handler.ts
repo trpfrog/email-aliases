@@ -16,11 +16,11 @@ export async function handleMcpRequest(
   request: Request,
   { aliases, auth, publicOrigin }: McpRequestContext,
 ): Promise<Response> {
-  // OAuthProvider は /mcp 配下のすべてのパスを渡してくるため、エンドポイント以外は 404 にする。
+  // OAuthProvider は /mcp 配下のすべてのパスを渡してくるため、エンドポイント以外は 404 にする
   if (new URL(request.url).pathname !== MCP_PATH) {
     return Response.json({ error: "Not found" }, { status: 404 });
   }
-  // OAuthProvider の requiredScopes は案内用で強制されないため、ここで権限を確認する。
+  // OAuthProvider の requiredScopes は案内用で強制されないため、ここで権限を確認する
   if (!auth.scope.includes(MANAGE_SCOPE)) return insufficientScope(auth, [MANAGE_SCOPE]);
 
   const origin = request.headers.get("Origin");
