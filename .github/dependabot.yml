@@ -5,3 +5,34 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 3
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    # 公開直後の版は取り込まない
+    cooldown:
+      default-days: 3
+    ignore:
+      # バージョンを固定しているため手動で上げる
+      - dependency-name: typescript
+      - dependency-name: cf
+      - dependency-name: "@cloudflare/vite-plugin"
+      # vite は vite-plus-core の別名で、pnpm-workspace.yaml の overrides と揃えて手動で上げる
+      - dependency-name: vite
+      - dependency-name: vite-plus
+    groups:
+      reylo:
+        patterns: ["reylo", "@reylosql/*"]
+      mantine:
+        patterns: ["@mantine/*"]
+      react:
+        patterns: ["react", "react-dom", "@types/react", "@types/react-dom"]
+      # 上のグループに入らない minor・patch はまとめる
+      minor-and-patch:
+        update-types: [minor, patch]
