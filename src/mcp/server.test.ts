@@ -156,6 +156,8 @@ describe("MCP ツール", () => {
     { name: "delete_alias", arguments: { address: "*" } },
     { name: "list_aliases", arguments: { limit: 101 } },
     { name: "list_aliases", arguments: { offset: -1 } },
+    { name: "list_aliases", arguments: { status: "on" } },
+    { name: "list_aliases", arguments: { query: "x".repeat(201) } },
     { name: "list_received_emails", arguments: { filter: "spam" } },
     { name: "delete_received_email", arguments: { id: 0 } },
     { name: "clear_received_emails", arguments: {} },

@@ -1,9 +1,11 @@
 import { describe, expect } from "vite-plus/test";
 import { address, dbTest, newAlias } from "../test/fixtures";
-import { updateAliasDetailsInput } from "./schema";
+import { listAliasesInput, updateAliasDetailsInput } from "./schema";
 import { createAliasStore } from "./store";
 
 const it = dbTest.extend("store", ({ db }) => createAliasStore(db));
+
+const listInput = (input: Record<string, unknown>) => listAliasesInput.parse(input);
 
 const details = (input: { address: string; note?: string; service_url?: string }) =>
   updateAliasDetailsInput.parse(input);
@@ -47,16 +49,40 @@ describe("エイリアスの store", () => {
       await store.create(newAlias({ address: `${local}@mail.example.test` }));
     }
 
-    const first = await store.list({ limit: 2, offset: 0 });
+    const first = await store.list(listInput({ limit: 2, offset: 0 }));
     expect(first.aliases.map((alias) => alias.address)).toEqual([
       "alpha@mail.example.test",
       "beta@mail.example.test",
     ]);
     expect(first.next_offset).toBe(2);
 
-    const last = await store.list({ limit: 2, offset: 2 });
+    const last = await store.list(listInput({ limit: 2, offset: 2 }));
     expect(last.aliases.map((alias) => alias.address)).toEqual(["gamma@mail.example.test"]);
     expect(last.next_offset).toBeNull();
+  });
+
+  it("アドレス・メモ・URL の部分一致と、状態・サービス URL の有無で絞り込む", async ({ store }) => {
+    await store.create(
+      newAlias({ address: "github@mail.example.test", service_url: "https://GitHub.com" }),
+    );
+    await store.create(newAlias({ address: "shop@mail.example.test", note: "通販サイト" }));
+    await store.create(
+      newAlias({ address: "old@mail.example.test", note: "GitHub の旧アカウント" }),
+    );
+    await store.setDisabled({ address: address("old@mail.example.test"), disabled: true });
+
+    const search = async (input: Record<string, unknown>) =>
+      (await store.list(listInput(input))).aliases.map((alias) => alias.address.split("@")[0]);
+
+    expect(await search({ query: "GITHUB" })).toEqual(["github", "old"]);
+    expect(await search({ query: "github.com" })).toEqual(["github"]);
+    expect(await search({ query: "通販" })).toEqual(["shop"]);
+    expect(await search({ query: " " })).toEqual(["github", "old", "shop"]);
+    expect(await search({ query: "github", status: "enabled" })).toEqual(["github"]);
+    expect(await search({ status: "disabled" })).toEqual(["old"]);
+    expect(await search({ has_service_url: true })).toEqual(["github"]);
+    expect(await search({ has_service_url: false })).toEqual(["old", "shop"]);
+    expect(await search({ query: "nothing" })).toEqual([]);
   });
 
   it("無効化しても登録情報を保ち、最初の無効化日時を維持して再有効化できる", async ({ store }) => {

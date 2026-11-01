@@ -29,6 +29,12 @@ type AdminEnv = {
 // クエリ文字列は数字の文字列として受け取り、MCP と同じ範囲・既定値で検証する
 const integerString = z.string().regex(/^\d+$/).transform(Number);
 const listAliasesQuery = z.object({
+  query: listAliasesInput.shape.query,
+  status: listAliasesInput.shape.status,
+  has_service_url: z
+    .enum(["true", "false"])
+    .transform((value) => value === "true")
+    .optional(),
   limit: integerString.optional().pipe(listAliasesInput.shape.limit),
   offset: integerString.optional().pipe(listAliasesInput.shape.offset),
 });
@@ -65,7 +71,7 @@ export const adminApi = new Hono<AdminEnv>()
   .use(withStores, requireSameOriginJson)
   .get(
     "/aliases",
-    validate("query", listAliasesQuery, "ページ指定を確認してください。"),
+    validate("query", listAliasesQuery, "絞り込みとページ指定を確認してください。"),
     async (c) => c.json(await c.var.aliases.list(c.req.valid("query")), 200),
   )
   .post(

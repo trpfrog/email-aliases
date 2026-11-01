@@ -87,7 +87,7 @@ export function createMcpServer({
     "list_aliases",
     {
       description:
-        "List email aliases, including disabled aliases, ordered by address. disabled_at is null when enabled and contains the disabling timestamp when forwarding is stopped. Use next_offset as offset to fetch the next page.",
+        "List or search email aliases, ordered by address. query matches part of the address, note, or service_url (case-insensitive for ASCII); pass a full address to look up one alias. status filters by enabled or disabled (default: all). has_service_url filters by whether a service URL is set. disabled_at is null when enabled and contains the disabling timestamp when forwarding is stopped. Use next_offset as offset to fetch the next page.",
       inputSchema: listAliasesInput,
       outputSchema: listAliasesResult,
       annotations: readOnly,

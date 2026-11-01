@@ -113,7 +113,12 @@ describe("MCP の HTTP ハンドラー", () => {
         aliases: [],
         next_offset: null,
       });
-      expect(aliases.list).toHaveBeenCalledExactlyOnceWith({ limit: 100, offset: 0 });
+      expect(aliases.list).toHaveBeenCalledExactlyOnceWith({
+        query: "",
+        status: "all",
+        limit: 100,
+        offset: 0,
+      });
     },
   );
 
