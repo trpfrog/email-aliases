@@ -26,6 +26,9 @@ updates:
       # vite は vite-plus-core の別名で、pnpm-workspace.yaml の overrides と揃えて手動で上げる
       - dependency-name: vite
       - dependency-name: vite-plus
+      # 型は対応する最低の Node（engines・.tool-versions）に合わせ、メジャーは Node と一緒に上げる
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     groups:
       reylo:
         patterns: ["reylo", "@reylosql/*"]
