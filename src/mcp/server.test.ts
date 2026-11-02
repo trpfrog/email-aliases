@@ -14,13 +14,19 @@ import {
   listReceivedEmailsResult,
 } from "../received/schema";
 import { createReceivedEmailStore } from "../received/store";
+import { settingsSchema } from "../settings/schema";
+import { createSettingsStore } from "../settings/store";
 import { address as aliasAddress, dbTest } from "../test/fixtures";
 import { createMcpServer, MAX_TOOL_INPUT_ELEMENTS } from "./server";
 
 const it = dbTest
   .extend("received", ({ db }) => createReceivedEmailStore(db))
   .extend("client", async ({ db, received }, { onCleanup }) => {
-    const server = createMcpServer({ aliases: createAliasStore(db), received });
+    const server = createMcpServer({
+      aliases: createAliasStore(db),
+      received,
+      settings: createSettingsStore(db),
+    });
     const client = new Client({ name: "test", version: "1.0.0" });
     onCleanup(async () => {
       await client.close();
@@ -54,6 +60,8 @@ describe("MCP ツール", () => {
       list_alias_activity: expect.objectContaining({ readOnlyHint: true }),
       delete_received_email: expect.objectContaining({ destructiveHint: true }),
       clear_received_emails: expect.objectContaining({ destructiveHint: true }),
+      get_settings: expect.objectContaining({ readOnlyHint: true }),
+      set_drop_dry_run: expect.objectContaining({ readOnlyHint: false, destructiveHint: false }),
     });
     for (const tool of tools) expect(tool.outputSchema).toBeDefined();
   });
@@ -110,6 +118,24 @@ describe("MCP ツール", () => {
     });
   });
 
+  it("ドライランの設定を参照・切り替えできる", async ({ client }) => {
+    const get = async () =>
+      settingsSchema.parse(
+        (await client.callTool({ name: "get_settings", arguments: {} })).structuredContent,
+      );
+    const set = async (enabled: boolean) =>
+      settingsSchema.parse(
+        (await client.callTool({ name: "set_drop_dry_run", arguments: { enabled } }))
+          .structuredContent,
+      );
+
+    expect(await get()).toEqual({ drop_dry_run_since: null });
+    const enabled = await set(true);
+    expect(enabled.drop_dry_run_since).not.toBeNull();
+    expect(await get()).toEqual(enabled);
+    expect(await set(false)).toEqual({ drop_dry_run_since: null });
+  });
+
   it("受信履歴を絞り込んで一覧し、個別・一括で削除できる", async ({ client, received }) => {
     for (const [local, outcome] of [
       ["shop", "forwarded"],
@@ -121,6 +147,7 @@ describe("MCP ツール", () => {
         sender: "sender@example.com",
         size: 100,
         outcome,
+        dry_run: false,
       });
     }
     const list = async (filter: string) =>

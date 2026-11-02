@@ -14,6 +14,7 @@ import {
   updateAliasResult,
 } from "../aliases/schema";
 import { APP_VERSION, MAIL_DOMAIN } from "../config";
+import { DRY_RUN_HEADER } from "../email/receive";
 import {
   clearReceivedEmailsInput,
   clearReceivedEmailsResult,
@@ -26,6 +27,8 @@ import {
   receivedEmailIdInput,
 } from "../received/schema";
 import type { ReceivedEmailStore } from "../received/store";
+import { getSettingsInput, setDropDryRunInput, settingsSchema } from "../settings/schema";
+import type { SettingsStore } from "../settings/store";
 
 const readOnly: ToolAnnotations = { readOnlyHint: true, openWorldHint: false };
 const idempotentWrite: ToolAnnotations = {
@@ -65,9 +68,11 @@ async function respond<Output extends z.ZodObject>(
 export function createMcpServer({
   aliases,
   received,
+  settings,
 }: {
   aliases: AliasStore;
   received: ReceivedEmailStore;
+  settings: SettingsStore;
 }): McpServer {
   const server = new McpServer(
     { name: "email-aliases", version: APP_VERSION },
@@ -136,7 +141,7 @@ export function createMcpServer({
   server.registerTool(
     "list_received_emails",
     {
-      description: `List the history of emails received at ${MAIL_DOMAIN} from the last 180 days, newest first. outcome is "forwarded" (sent to the inbox), "disabled" (dropped because the alias is disabled), or "unknown" (dropped because no alias exists; useful for finding aliases that were never created). filter narrows by outcome; "dropped" matches both "disabled" and "unknown". Unknown recipients are not recorded during floods (over ${RECEIVED_LIMITS.newUnknownPerHour} new or ${RECEIVED_LIMITS.unknownPerHour} total per hour). Use next_offset as offset to fetch the next page.`,
+      description: `List the history of emails received at ${MAIL_DOMAIN} from the last 180 days, newest first. outcome is "forwarded" (sent to the inbox), "disabled" (dropped because the alias is disabled), or "unknown" (dropped because no alias exists; useful for finding aliases that were never created). dry_run is true when the email was judged "disabled" or "unknown" but still forwarded because the drop dry run was on. filter narrows by outcome; "dropped" matches both "disabled" and "unknown". Unknown recipients are not recorded during floods (over ${RECEIVED_LIMITS.newUnknownPerHour} new or ${RECEIVED_LIMITS.unknownPerHour} total per hour). Use next_offset as offset to fetch the next page.`,
       inputSchema: listReceivedEmailsInput,
       outputSchema: listReceivedEmailsResult,
       annotations: readOnly,
@@ -178,6 +183,29 @@ export function createMcpServer({
       annotations: idempotentDelete,
     },
     ({ filter }) => respond(clearReceivedEmailsResult, received.clear(filter)),
+  );
+
+  server.registerTool(
+    "get_settings",
+    {
+      description:
+        "Get the global settings. drop_dry_run_since is null when emails to disabled or unknown recipients are dropped, and contains the start timestamp while the drop dry run is on.",
+      inputSchema: getSettingsInput,
+      outputSchema: settingsSchema,
+      annotations: readOnly,
+    },
+    () => respond(settingsSchema, settings.get()),
+  );
+
+  server.registerTool(
+    "set_drop_dry_run",
+    {
+      description: `Turn the drop dry run on or off. While it is on, emails to disabled or unknown recipients are forwarded instead of dropped, with the ${DRY_RUN_HEADER} header set to the outcome they would have had, and recorded in the history with outcome "disabled" or "unknown" and dry_run true. Use it during a migration to check which emails would be dropped. Turning it off makes those emails be dropped again.`,
+      inputSchema: setDropDryRunInput,
+      outputSchema: settingsSchema,
+      annotations: idempotentWrite,
+    },
+    ({ enabled }) => respond(settingsSchema, settings.setDropDryRun(enabled)),
   );
 
   return server;

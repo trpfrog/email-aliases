@@ -43,6 +43,11 @@ export function ReceivedRow({
         <Badge color={badge.color} variant="light" size="xs" mt={4}>
           {badge.label}
         </Badge>
+        {email.dry_run && (
+          <Badge color="yellow" variant="outline" size="xs" mt={4} ml={4}>
+            ドライランで転送
+          </Badge>
+        )}
         {email.outcome === "unknown" && registered && (
           <Badge color="teal" variant="outline" size="xs" mt={4} ml={4}>
             登録済み

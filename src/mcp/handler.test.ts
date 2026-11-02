@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { AliasStore } from "../aliases/store";
 import { MANAGE_SCOPE } from "../config";
 import type { ReceivedEmailStore } from "../received/store";
+import type { SettingsStore } from "../settings/store";
 import { handleMcpRequest, MAX_MCP_REQUEST_BODY_BYTES } from "./handler";
 
 const origin = "https://aliases.example";
@@ -30,9 +31,13 @@ const it = baseIt
     clear: vi.fn<ReceivedEmailStore["clear"]>(),
     activity: vi.fn<ReceivedEmailStore["activity"]>(),
   }))
+  .extend("settings", () => ({
+    get: vi.fn<SettingsStore["get"]>(),
+    setDropDryRun: vi.fn<SettingsStore["setDropDryRun"]>(),
+  }))
   .extend(
     "request",
-    ({ aliases, received }) =>
+    ({ aliases, received, settings }) =>
       (
         method: string,
         params: Record<string, unknown> = {},
@@ -51,7 +56,7 @@ const it = baseIt
             headers,
             body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
           }),
-          { aliases, received, auth, publicOrigin: origin },
+          { aliases, received, settings, auth, publicOrigin: origin },
         );
       },
   );
@@ -65,12 +70,13 @@ const toolResponse = z.object({
 });
 
 describe("MCP の HTTP ハンドラー", () => {
-  it("エンドポイント以外のパスは 404 にする", async ({ aliases, received }) => {
+  it("エンドポイント以外のパスは 404 にする", async ({ aliases, received, settings }) => {
     const response = await handleMcpRequest(
       new Request(`${origin}/mcp/other`, { method: "POST" }),
       {
         aliases,
         received,
+        settings,
         auth: authFor([MANAGE_SCOPE]),
         publicOrigin: origin,
       },
@@ -78,7 +84,7 @@ describe("MCP の HTTP ハンドラー", () => {
     expect(response.status).toBe(404);
   });
 
-  it("GET の SSE ストリームを開かず 405 にする", async ({ aliases, received }) => {
+  it("GET の SSE ストリームを開かず 405 にする", async ({ aliases, received, settings }) => {
     const response = await handleMcpRequest(
       new Request(`${origin}/mcp`, {
         method: "GET",
@@ -87,6 +93,7 @@ describe("MCP の HTTP ハンドラー", () => {
       {
         aliases,
         received,
+        settings,
         auth: authFor([MANAGE_SCOPE]),
         publicOrigin: origin,
       },

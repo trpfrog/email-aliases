@@ -73,6 +73,8 @@ export default defineConfig({
           "src/aliases/store.test-d.ts",
           "src/received/queries.ts",
           "src/received/store.test-d.ts",
+          "src/settings/queries.ts",
+          "src/settings/store.test-d.ts",
         ],
         rules: {
           "typescript/no-unsafe-argument": "off",

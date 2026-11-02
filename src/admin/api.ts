@@ -18,12 +18,14 @@ import {
   receivedEmailIdInput,
 } from "../received/schema";
 import { createReceivedEmailStore, type ReceivedEmailStore } from "../received/store";
+import { setDropDryRunInput } from "../settings/schema";
+import { createSettingsStore, type SettingsStore } from "../settings/store";
 
 const NOT_FOUND = "エイリアスが見つかりません。";
 
 type AdminEnv = {
   Bindings: Env;
-  Variables: { aliases: AliasStore; received: ReceivedEmailStore };
+  Variables: { aliases: AliasStore; received: ReceivedEmailStore; settings: SettingsStore };
 };
 
 // クエリ文字列は数字の文字列として受け取り、MCP と同じ範囲・既定値で検証する
@@ -48,6 +50,7 @@ const listReceivedEmailsQuery = z.object({
 const withStores = createMiddleware<AdminEnv>(async (c, next) => {
   c.set("aliases", createAliasStore(c.env.DB));
   c.set("received", createReceivedEmailStore(c.env.DB));
+  c.set("settings", createSettingsStore(c.env.DB));
   await next();
 });
 
@@ -117,6 +120,12 @@ export const adminApi = new Hono<AdminEnv>()
     "/received/clear",
     validate("json", clearReceivedEmailsInput, "絞り込みを確認してください。"),
     async (c) => c.json(await c.var.received.clear(c.req.valid("json").filter), 200),
+  )
+  .get("/settings", async (c) => c.json(await c.var.settings.get(), 200))
+  .put(
+    "/settings/drop-dry-run",
+    validate("json", setDropDryRunInput, "ドライランの有効・無効を確認してください。"),
+    async (c) => c.json(await c.var.settings.setDropDryRun(c.req.valid("json").enabled), 200),
   );
 
 adminApi.onError((error, c) => {

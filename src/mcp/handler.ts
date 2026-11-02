@@ -3,11 +3,13 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import type { AliasStore } from "../aliases/store";
 import { MANAGE_SCOPE, MCP_PATH } from "../config";
 import type { ReceivedEmailStore } from "../received/store";
+import type { SettingsStore } from "../settings/store";
 import { createMcpServer } from "./server";
 
 export type McpRequestContext = {
   aliases: AliasStore;
   received: ReceivedEmailStore;
+  settings: SettingsStore;
   /** OAuthProvider が検証したトークンの情報。 */
   auth: OAuthResourceAuth;
   publicOrigin: string;
@@ -22,7 +24,7 @@ export const MAX_MCP_REQUEST_BODY_BYTES = 64 * 1024;
 /** ステートレスな Streamable HTTP として、リクエストごとに MCP サーバーを作って応答する。 */
 export async function handleMcpRequest(
   request: Request,
-  { aliases, received, auth, publicOrigin }: McpRequestContext,
+  { aliases, received, settings, auth, publicOrigin }: McpRequestContext,
 ): Promise<Response> {
   // OAuthProvider は /mcp 配下のすべてのパスを渡してくるため、エンドポイント以外は 404 にする
   if (new URL(request.url).pathname !== MCP_PATH) {
@@ -45,7 +47,7 @@ export async function handleMcpRequest(
     return Response.json({ error: "Invalid origin" }, { status: 403 });
   }
 
-  const server = createMcpServer({ aliases, received });
+  const server = createMcpServer({ aliases, received, settings });
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,

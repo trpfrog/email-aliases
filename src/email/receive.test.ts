@@ -2,28 +2,32 @@ import { describe, expect, onTestFinished, vi } from "vite-plus/test";
 import { createAliasStore } from "../aliases/store";
 import { createReceivedEmailStore } from "../received/store";
 import { address, dbTest, newAlias } from "../test/fixtures";
-import { receiveEmail } from "./receive";
+import { createSettingsStore } from "../settings/store";
+import { DRY_RUN_HEADER, receiveEmail } from "./receive";
 
 type Message = Parameters<typeof receiveEmail>[0];
 
 const it = dbTest
   .extend("aliases", ({ db }) => createAliasStore(db))
   .extend("received", ({ db }) => createReceivedEmailStore(db))
+  .extend("settings", ({ db }) => createSettingsStore(db))
   .extend("forward", () =>
     vi.fn<Message["forward"]>().mockResolvedValue({ messageId: "test-message" }),
   )
   .extend(
     "receive",
-    ({ aliases, received, forward }) =>
+    ({ aliases, received, settings, forward }) =>
       (to: string, { forwardTo }: { forwardTo?: string } = { forwardTo: "inbox@example.com" }) =>
         receiveEmail(
           { from: "sender@example.com", to, rawSize: 1234, forward },
-          { aliases, received, forwardTo },
+          { aliases, received, settings, forwardTo },
         ),
   )
   .extend("history", ({ received }) => async () => {
     const { emails } = await received.list({ filter: "all", limit: 100, offset: 0 });
-    return emails.map(({ recipient, outcome }) => ({ recipient, outcome })).toReversed();
+    return emails
+      .map(({ recipient, outcome, dry_run }) => ({ recipient, outcome, dry_run }))
+      .toReversed();
   });
 
 describe("メールの受信", () => {
@@ -65,12 +69,87 @@ describe("メールの受信", () => {
     }
 
     expect(await history()).toEqual([
-      { recipient: "shop@mail.example.test", outcome: "forwarded" },
-      { recipient: "old@mail.example.test", outcome: "disabled" },
-      { recipient: "typo@mail.example.test", outcome: "unknown" },
+      { recipient: "shop@mail.example.test", outcome: "forwarded", dry_run: false },
+      { recipient: "old@mail.example.test", outcome: "disabled", dry_run: false },
+      { recipient: "typo@mail.example.test", outcome: "unknown", dry_run: false },
     ]);
     const { emails } = await received.list({ filter: "forwarded", limit: 1, offset: 0 });
     expect(emails[0]).toMatchObject({ sender: "sender@example.com", size: 1234 });
+  });
+
+  it("ドライラン中は drop と判定したメールもヘッダーを付けて転送し、判定を履歴に残す", async ({
+    aliases,
+    settings,
+    forward,
+    receive,
+    history,
+  }) => {
+    await aliases.create(newAlias({ address: "shop@mail.example.test" }));
+    await aliases.create(newAlias({ address: "old@mail.example.test" }));
+    await aliases.setDisabled({ address: address("old@mail.example.test"), disabled: true });
+    await settings.setDropDryRun(true);
+
+    for (const to of [
+      "shop@mail.example.test",
+      "old@mail.example.test",
+      "typo@mail.example.test",
+    ]) {
+      await receive(to);
+    }
+
+    expect(forward.mock.calls.map(([to, headers]) => [to, headers?.get(DRY_RUN_HEADER)])).toEqual([
+      ["inbox@example.com", undefined],
+      ["inbox@example.com", "disabled"],
+      ["inbox@example.com", "unknown"],
+    ]);
+    expect(await history()).toEqual([
+      { recipient: "shop@mail.example.test", outcome: "forwarded", dry_run: false },
+      { recipient: "old@mail.example.test", outcome: "disabled", dry_run: true },
+      { recipient: "typo@mail.example.test", outcome: "unknown", dry_run: true },
+    ]);
+
+    forward.mockClear();
+    await settings.setDropDryRun(false);
+    await receive("typo@mail.example.test");
+    expect(forward).not.toHaveBeenCalled();
+  });
+
+  it("ドライランの転送に失敗したら履歴に記録せず、記録の失敗は成功として扱う", async ({
+    db,
+    settings,
+    forward,
+    receive,
+    history,
+  }) => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    onTestFinished(() => consoleError.mockRestore());
+    await settings.setDropDryRun(true);
+
+    forward.mockRejectedValueOnce(new Error("forward unavailable"));
+    await expect(receive("typo@mail.example.test")).rejects.toThrow("forward unavailable");
+    expect(await history()).toEqual([]);
+
+    db.exec("DROP TABLE received_emails");
+    await receive("typo@mail.example.test");
+    expect(forward).toHaveBeenCalledTimes(2);
+    expect(consoleError).toHaveBeenCalledWith(
+      "Failed to record a forwarded email",
+      expect.any(Error),
+    );
+  });
+
+  it("drop と判定したときだけ設定を読み、読めなければエラーを伝える", async ({
+    db,
+    aliases,
+    forward,
+    receive,
+  }) => {
+    await aliases.create(newAlias({ address: "shop@mail.example.test" }));
+    db.exec("DROP TABLE settings");
+
+    await receive("shop@mail.example.test");
+    expect(forward).toHaveBeenCalledOnce();
+    await expect(receive("typo@mail.example.test")).rejects.toThrow(/no such table/);
   });
 
   it("転送に失敗したメールは履歴に記録しない", async ({ aliases, forward, receive, history }) => {

@@ -11,7 +11,9 @@ import { StatusNotification, type Notice } from "./components/feedback/status-no
 import { AppFooter } from "./components/layout/app-footer";
 import { AppHeader } from "./components/layout/app-header";
 import { ReceivedSection } from "./components/received/received-section";
+import { DropDryRunPanel } from "./components/settings/drop-dry-run-panel";
 import { useAliases } from "./hooks/use-aliases";
+import { useSettings } from "./hooks/use-settings";
 import { isDisabled } from "./lib/alias-display";
 import { errorMessage } from "./lib/error-message";
 
@@ -19,6 +21,7 @@ type Dialog = { type: "create"; localPart: string } | { type: "edit" | "delete";
 
 export function App() {
   const aliases = useAliases();
+  const settings = useSettings();
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   const registered = new Set(aliases.aliases.map((alias) => alias.address.toLowerCase()));
@@ -57,6 +60,12 @@ export function App() {
             loading={aliases.loading}
             count={aliases.aliases.length}
             onCreate={() => openCreate()}
+          />
+          <DropDryRunPanel
+            settings={settings.settings}
+            error={settings.error}
+            busy={settings.busy}
+            onChange={(enabled) => void notifyResult(settings.setDropDryRun(enabled))}
           />
           {/* 受信履歴はタブを開いたときだけ読み込む */}
           <Tabs defaultValue="aliases" keepMounted={false}>
