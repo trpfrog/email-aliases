@@ -11,10 +11,15 @@ import type { AliasActivity, ListAliasActivityInput, ReceivedEmail } from "./sch
 type Row<Query extends { "~reylo": { element: unknown } }> = Query["~reylo"]["element"];
 type Params<Query extends { "~reylo": { input: unknown } }> = Query["~reylo"]["input"];
 
-test("一覧の行は outcome 以外が ReceivedEmail と一致する", () => {
-  // outcome は Reylo が string と推論するため、queries.ts で Zod により絞り込む
+test("一覧の行は outcome・dry_run 以外が ReceivedEmail と一致する", () => {
+  // outcome は Reylo が string と推論するため、queries.ts で Zod により絞り込む。
+  // dry_run は 0 か 1 の整数なので、queries.ts で真偽値に変換する
   expectTypeOf<Row<typeof listQuery>>().toEqualTypeOf<{
-    [Key in keyof ReceivedEmail]: Key extends "outcome" ? string : ReceivedEmail[Key];
+    [Key in keyof ReceivedEmail]: Key extends "outcome"
+      ? string
+      : Key extends "dry_run"
+        ? number
+        : ReceivedEmail[Key];
   }>();
   expectTypeOf<ReceivedEmail["outcome"]>().toExtend<Row<typeof listQuery>["outcome"]>();
 });
@@ -35,6 +40,7 @@ test("SQL の引数と戻り値が queries.ts の呼び出し方と一致する"
     sender: string;
     size: number;
     outcome: string;
+    dry_run: number;
     max_unknown_per_hour: number;
     max_new_unknown_per_hour: number;
   }>();

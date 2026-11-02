@@ -23,6 +23,8 @@ export const receivedEmailSchema = z.object({
   sender: z.string(),
   size: z.int(),
   outcome: receivedOutcomeSchema,
+  /** drop と判定したが、ドライラン中だったため転送した。 */
+  dry_run: z.boolean(),
 });
 
 export type ReceivedEmail = z.output<typeof receivedEmailSchema>;

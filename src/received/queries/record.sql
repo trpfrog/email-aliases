@@ -6,12 +6,13 @@ WITH input AS (
     :sender::text AS sender,
     :size::int AS size,
     :outcome::text AS outcome,
+    :dry_run::int AS dry_run,
     :max_unknown_per_hour::int AS max_unknown,
     :max_new_unknown_per_hour::int AS max_new_unknown,
     strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 hour') AS since
 )
-INSERT INTO received_emails (recipient, sender, size, outcome)
-SELECT recipient, sender, size, outcome
+INSERT INTO received_emails (recipient, sender, size, outcome, dry_run)
+SELECT recipient, sender, size, outcome, dry_run
 FROM input
 WHERE input.outcome <> 'unknown'
   OR (

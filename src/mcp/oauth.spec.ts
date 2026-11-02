@@ -143,10 +143,12 @@ describe("OAuth と MCP", () => {
       "create_alias",
       "delete_alias",
       "delete_received_email",
+      "get_settings",
       "list_alias_activity",
       "list_aliases",
       "list_received_emails",
       "set_alias_disabled",
+      "set_drop_dry_run",
       "update_alias_details",
     ]);
 

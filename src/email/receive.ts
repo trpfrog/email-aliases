@@ -1,8 +1,10 @@
 import { addressSchema } from "../aliases/schema";
 import type { AliasStatus, AliasStore } from "../aliases/store";
-import { MAIL_DOMAIN } from "../config";
+import { DRY_RUN_HEADER, MAIL_DOMAIN } from "../config";
 import type { ReceivedOutcome } from "../received/schema";
 import type { ReceivedEmailStore } from "../received/store";
+import { isDropDryRun } from "../settings/schema";
+import type { SettingsStore } from "../settings/store";
 
 const OUTCOMES = {
   enabled: "forwarded",
@@ -13,6 +15,7 @@ const OUTCOMES = {
 /**
  * 有効な登録済み宛先へのメールだけを固定の受信箱に転送し、受信履歴に記録する。
  * 無効・未登録の宛先は、転送も拒否もせずに破棄する（履歴には残す）。
+ * ただし移行期間用のドライラン中は、破棄せずにヘッダーを付けて転送し、履歴に dry_run として残す。
  * 自ドメイン以外や形式が不正な宛先は、履歴にも残さない。
  * 設定・検索・転送の失敗は握りつぶさず、Worker の失敗として呼び出し元に伝える。
  * 転送した後の記録の失敗だけは、再送による二重の転送を避けるためログに残して成功として扱う。
@@ -22,10 +25,12 @@ export async function receiveEmail(
   {
     aliases,
     received,
+    settings,
     forwardTo,
   }: {
     aliases: Pick<AliasStore, "status">;
     received: Pick<ReceivedEmailStore, "record">;
+    settings: Pick<SettingsStore, "get">;
     forwardTo: string | undefined;
   },
 ): Promise<void> {
@@ -34,20 +39,28 @@ export async function receiveEmail(
   if (!address.success) return;
 
   const outcome = OUTCOMES[await aliases.status(address.data)];
+  // 設定の読み取りは drop と判定したメールだけにする
+  const dropped = outcome !== "forwarded";
+  const dryRun = dropped && isDropDryRun(await settings.get());
   const record = () =>
     received.record({
       recipient: address.data,
       sender: message.from,
       size: message.rawSize,
       outcome,
+      dry_run: dryRun,
     });
-  if (outcome !== "forwarded") {
+  if (dropped && !dryRun) {
     await record();
     return;
   }
 
   // 転送に失敗したメールを転送済みとして記録しないよう、転送の後に記録する
-  await message.forward(destination);
+  if (dryRun) {
+    await message.forward(destination, new Headers({ [DRY_RUN_HEADER]: outcome }));
+  } else {
+    await message.forward(destination);
+  }
   try {
     await record();
   } catch (error) {

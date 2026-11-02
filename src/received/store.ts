@@ -27,6 +27,8 @@ export interface ReceivedEmailStore {
     sender: string;
     size: number;
     outcome: ReceivedOutcome;
+    /** drop と判定したが、ドライラン中だったため転送した。 */
+    dry_run: boolean;
   }): Promise<boolean>;
   /** 新しい順に返す。 */
   list(input: ListReceivedEmailsInput): Promise<ListReceivedEmailsResult>;

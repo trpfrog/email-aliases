@@ -7,6 +7,7 @@ import {
   listReceivedEmailsResult,
 } from "../received/schema";
 import { createReceivedEmailStore } from "../received/store";
+import { settingsSchema } from "../settings/schema";
 import { address as aliasAddress, dbTest } from "../test/fixtures";
 import { app } from "./app";
 
@@ -177,6 +178,22 @@ describe("管理 API", () => {
     );
   });
 
+  it("ドライランの設定を参照・切り替え、不正な入力は 400 にする", async ({ api, request }) => {
+    const settings = async () =>
+      settingsSchema.parse(await (await request("/api/settings")).json());
+    const path = "/api/settings/drop-dry-run";
+
+    expect(await settings()).toEqual({ drop_dry_run_since: null });
+    const enabled = await api("PUT", { enabled: true }, { path });
+    expect(enabled.status).toBe(200);
+    expect(settingsSchema.parse(await enabled.json()).drop_dry_run_since).not.toBeNull();
+    expect((await settings()).drop_dry_run_since).not.toBeNull();
+
+    expect((await api("PUT", { enabled: "yes" }, { path })).status).toBe(400);
+    expect((await api("PUT", { enabled: false }, { path })).status).toBe(200);
+    expect(await settings()).toEqual({ drop_dry_run_since: null });
+  });
+
   it("受信履歴を絞り込んで一覧し、個別・一括で削除する", async ({ db, api, request }) => {
     const received = createReceivedEmailStore(db);
     for (const outcome of ["forwarded", "disabled", "unknown"] as const) {
@@ -185,6 +202,7 @@ describe("管理 API", () => {
         sender: "sender@example.com",
         size: 1,
         outcome,
+        dry_run: false,
       });
     }
     const list = async (query: string) =>

@@ -28,6 +28,11 @@ flowchart TD
   admin --> store
   email --> store
   mcp --> received[received/store.ts]
+  mcp --> settings[settings/store.ts]
+  admin --> settings
+  email --> settings
+  settings --> ssql[settings/queries/*.sql]
+  ssql --> D1
   admin --> received
   email --> received
   store --> sql[aliases/queries/*.sql]
@@ -36,17 +41,18 @@ flowchart TD
   rsql --> D1
 ```
 
-- SQL を扱う境界はエイリアスの `src/aliases/store.ts` と受信履歴の `src/received/store.ts` だけ。MCP・管理 API・メール受信はすべてこの store を使う。
+- SQL を扱う境界はエイリアスの `src/aliases/store.ts`、受信履歴の `src/received/store.ts`、設定の `src/settings/store.ts` だけ。MCP・管理 API・メール受信はすべてこの store を使う。
 - SQL は各ディレクトリの `queries/*.sql` に置き、Reylo が型を推論する。スキーマ変更は `migrations/` に追加する。Reylo は SQLite の CHECK 制約から union を推論しないため、そうした列は `queries.ts` で Zod により検証する。
-- 入力のスキーマは Zod で `src/aliases/schema.ts`・`src/received/schema.ts` に置く。検証ライブラリへの依存は `src/http/validate.ts` に閉じる。
+- 入力のスキーマは Zod で `src/aliases/schema.ts`・`src/received/schema.ts`・`src/settings/schema.ts` に置く。検証ライブラリへの依存は `src/http/validate.ts` に閉じる。
 - ドメイン・表示名・テーマカラーは `app.config.ts`、デプロイ先は `deploy.config.ts` に置く。`cloudflare.config.ts` の依存は開発サーバーから読めないため、Worker が読む設定を `deploy.config.ts` 側に入れない。コードに直接書かず、`src/config.ts` の `MAIL_DOMAIN`・`APP_NAME` などを使う。本番のドメインはリポジトリに載せず、ビルド時の環境変数 `MAIL_DOMAIN` で渡す（`vite.config.ts` の `define`）。単体テストのドメインは `src/test/setup.ts` で `mail.example.test` に固定している。
+- 運用中に切り替える設定（ドライランなど）は、ビルド時の設定や環境変数ではなく D1 の `settings` テーブル（`src/settings/store.ts`）に置き、管理画面・MCP から変更する。デプロイは GitHub Release を経るため、切り替えのたびにリリースしなくて済むようにする。D1 は読み取った行数で課金されるため、設定は 1 行を主キーで読み、必要な場合（例: drop と判定したメール）だけ読む。インスタンスごとにキャッシュすると切り替えがすぐに効かないため、キャッシュしない。
 - 管理画面（`src/web/`）は `src/admin/api.ts` の `AdminApi` 型を `hono/client` に渡して型を共有する。
 - 管理画面の UI は Mantine のコンポーネントと style props、`theme.ts` で作る。独自 CSS・外部フォントは使わない。
 
 ## 型安全
 
 - `any`・型アサーション（`as`）・non-null アサーション（`!`）は禁止（`as const` は可）。
-- 例外は `src/aliases/queries.ts`・`src/received/queries.ts` と各 `store.test-d.ts` のみ。tsgolint は `.sql` の import を解決できないため、queries の外向きの型を明示し、Reylo の推論との一致を `store.test-d.ts` で検査する。
+- 例外は `src/aliases/queries.ts`・`src/received/queries.ts`・`src/settings/queries.ts` と各 `store.test-d.ts` のみ。tsgolint は `.sql` の import を解決できないため、queries の外向きの型を明示し、Reylo の推論との一致を `store.test-d.ts` で検査する。
 - TypeScript 7.1 Beta、`cf`、Cloudflare Vite plugin はバージョンを固定している。勝手に上げない。
 
 ## テスト

@@ -9,9 +9,10 @@ flowchart LR
   Routing --> Worker
   Worker -->|有効な登録済み宛先| Inbox[固定の受信箱]
   Worker -->|未登録・無効| Drop[drop]
+  Worker -.->|ドライラン中は未登録・無効も| Inbox
 
   ChatGPT -->|OAuth| MCP["/mcp"]
-  Admin["管理画面 /<br/>(Basic 認証)"] --> API["/api/aliases<br/>/api/received"]
+  Admin["管理画面 /<br/>(Basic 認証)"] --> API["/api/aliases<br/>/api/received<br/>/api/settings"]
   MCP --> D1[(D1)]
   API --> D1
   Worker -.->|宛先を照会・受信履歴を記録| D1
@@ -23,20 +24,22 @@ Cloudflare Workers / D1 / KV（OAuth 用）/ Hono / React / Mantine / Reylo / Vi
 
 Worker は `fetch`（HTTP）と `email`（Email Routing）の 2 つのハンドラーを持つ。
 
-| 入口                    | 認証  | 内容                                                     |
-| ----------------------- | ----- | -------------------------------------------------------- |
-| `email` ハンドラー      | なし  | Catch-all で受けたメールを転送または drop し、履歴に記録 |
-| `/mcp`                  | OAuth | MCP（Streamable HTTP、ステートレス）                     |
-| `/.well-known/oauth-*`  | なし  | OAuth のメタデータ（OAuthProvider が自動で返す）         |
-| `/oauth/register`       | なし  | クライアント登録（DCR）                                  |
-| `/oauth/token`          | なし  | トークン発行・更新                                       |
-| `/authorize`            | Basic | 接続承認ページ                                           |
-| `/`                     | Basic | 管理画面（React SPA）                                    |
-| `/api/aliases`          | Basic | 管理 API（GET・POST・PATCH・DELETE）                     |
-| `/api/aliases/disabled` | Basic | 管理 API（PUT で有効・無効を切り替え）                   |
-| `/api/received`         | Basic | 受信履歴（GET で一覧、DELETE で 1 件削除）               |
-| `/api/received/clear`   | Basic | 受信履歴（POST で絞り込みに一致する行を削除）            |
-| `/health`               | なし  | 死活確認                                                 |
+| 入口                         | 認証  | 内容                                                     |
+| ---------------------------- | ----- | -------------------------------------------------------- |
+| `email` ハンドラー           | なし  | Catch-all で受けたメールを転送または drop し、履歴に記録 |
+| `/mcp`                       | OAuth | MCP（Streamable HTTP、ステートレス）                     |
+| `/.well-known/oauth-*`       | なし  | OAuth のメタデータ（OAuthProvider が自動で返す）         |
+| `/oauth/register`            | なし  | クライアント登録（DCR）                                  |
+| `/oauth/token`               | なし  | トークン発行・更新                                       |
+| `/authorize`                 | Basic | 接続承認ページ                                           |
+| `/`                          | Basic | 管理画面（React SPA）                                    |
+| `/api/aliases`               | Basic | 管理 API（GET・POST・PATCH・DELETE）                     |
+| `/api/aliases/disabled`      | Basic | 管理 API（PUT で有効・無効を切り替え）                   |
+| `/api/received`              | Basic | 受信履歴（GET で一覧、DELETE で 1 件削除）               |
+| `/api/received/clear`        | Basic | 受信履歴（POST で絞り込みに一致する行を削除）            |
+| `/api/settings`              | Basic | 設定（GET で取得）                                       |
+| `/api/settings/drop-dry-run` | Basic | 設定（PUT で drop のドライランを切り替え）               |
+| `/health`                    | なし  | 死活確認                                                 |
 
 ## MCP ツール
 
@@ -50,6 +53,8 @@ Worker は `fetch`（HTTP）と `email`（Email Routing）の 2 つのハンド�
 | `list_received_emails`  | `filter?`, `limit?`, `offset?`                               | 受信履歴を新しい順に一覧。`filter` で結果を絞り込む                                               |
 | `delete_received_email` | `id`                                                         | 受信履歴を 1 件削除                                                                               |
 | `clear_received_emails` | `filter`                                                     | 絞り込みに一致する受信履歴をまとめて削除                                                          |
+| `get_settings`          |                                                              | 設定を取得。`drop_dry_run_since` はドライランの開始日時で、無効なら null                          |
+| `set_drop_dry_run`      | `enabled`                                                    | drop のドライランを切り替える                                                                     |
 | `list_alias_activity`   | `sort?`, `limit?`, `offset?`                                 | エイリアスごとの最終受信・直近 30 日と 180 日の受信件数。使われていないものや受信の多いものを探す |
 
 - `address` は `shopping@mail.example.com` のような完全なアドレス。完全一致で判定するため `shopping+news` は別扱い。
@@ -66,6 +71,16 @@ Worker は `fetch`（HTTP）と `email`（Email Routing）の 2 つのハンド�
 - 未登録の宛先は攻撃に使われやすいため、直近 1 時間に新しい宛先が 10 件、または未登録宛ての受信が 100 件に達すると、それ以降は記録せずに drop する。
 - 180 日を過ぎた履歴は、受信のたびに D1 のトリガーが削除する。
 - 転送した後に記録が失敗しても、メールは転送済みなのでログに残すだけにする（Worker を失敗させると再送で二重に転送されうるため）。
+
+## drop のドライラン（移行期間）
+
+本番で使い始める前に、drop の判定が正しいかを確かめるためのモード。管理画面の上部のスイッチか、MCP の `set_drop_dry_run` で切り替える（既定は無効）。
+
+- 有効な間は、無効・未登録の宛先へのメールも drop せずに `FORWARD_TO` へ転送する。
+- 本来 drop するメールには `X-Email-Aliases-Dry-Run` ヘッダー（値は `disabled` か `unknown`）を付ける。
+- 受信履歴には本来の判定（`disabled`・`unknown`）を残し、`dry_run` を true にする。「ドロップ」に絞り込むと、本来 drop するメールの一覧になる。
+- 未登録の宛先が大量に届いて履歴の記録を止めている間も、転送は続ける。
+- 無効にすると、すぐに drop を始める。
 
 ## ローカル開発
 

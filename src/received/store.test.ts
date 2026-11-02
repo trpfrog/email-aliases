@@ -9,12 +9,13 @@ const it = dbTest
   .extend(
     "record",
     ({ store }) =>
-      (local: string, outcome: ReceivedOutcome = "unknown") =>
+      (local: string, outcome: ReceivedOutcome = "unknown", dryRun = false) =>
         store.record({
           recipient: address(`${local}@mail.example.test`),
           sender: "sender@example.com",
           size: 100,
           outcome,
+          dry_run: dryRun,
         }),
   )
   .extend("recipients", ({ store }) => async () => {
@@ -47,12 +48,26 @@ describe("受信履歴の store", () => {
     expect(last.next_offset).toBeNull();
   });
 
+  it("ドライランで転送したかどうかを記録する", async ({ store, record }) => {
+    await record("a", "forwarded");
+    await record("b", "unknown", true);
+    await record("c", "disabled");
+
+    const { emails } = await store.list({ filter: "all", limit: 100, offset: 0 });
+    expect(emails.map(({ outcome, dry_run }) => ({ outcome, dry_run }))).toEqual([
+      { outcome: "disabled", dry_run: false },
+      { outcome: "unknown", dry_run: true },
+      { outcome: "forwarded", dry_run: false },
+    ]);
+  });
+
   it("送信元を上限の長さに切り詰める", async ({ store }) => {
     await store.record({
       recipient: address("a@mail.example.test"),
       sender: "x".repeat(RECEIVED_LIMITS.sender + 10),
       size: 1,
       outcome: "forwarded",
+      dry_run: false,
     });
     const { emails } = await store.list({ filter: "all", limit: 1, offset: 0 });
     expect(emails[0]?.sender).toHaveLength(RECEIVED_LIMITS.sender);

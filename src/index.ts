@@ -15,6 +15,7 @@ import { app } from "./http/app";
 import { rateLimitByIp } from "./http/rate-limit";
 import { handleMcpRequest } from "./mcp/handler";
 import { createReceivedEmailStore } from "./received/store";
+import { createSettingsStore } from "./settings/store";
 
 // OAuthProvider はトークンを検証した後に ctx.auth を設定するが、apiHandler の型には現れないため実行時に検証する
 const authenticatedContext = z.object({
@@ -27,6 +28,7 @@ const mcp = {
     return await handleMcpRequest(request, {
       aliases: createAliasStore(env.DB),
       received: createReceivedEmailStore(env.DB),
+      settings: createSettingsStore(env.DB),
       auth,
       publicOrigin: requirePublicOrigin(env),
     });
@@ -64,6 +66,7 @@ export default {
     return receiveEmail(message, {
       aliases: createAliasStore(env.DB),
       received: createReceivedEmailStore(env.DB),
+      settings: createSettingsStore(env.DB),
       forwardTo: env.FORWARD_TO,
     });
   },
