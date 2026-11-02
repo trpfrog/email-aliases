@@ -91,7 +91,7 @@ vp run build
 
 - SQL は `src/aliases/queries/*.sql` と `src/received/queries/*.sql` に置き、Reylo が型を推論する。そのため TypeScript 7.1 Beta を固定している。
 - `any`・`as`・`!` は lint で禁止。例外は Reylo の型を受け取る `src/aliases/queries.ts`・`src/received/queries.ts` のみで、型の一致は各 `store.test-d.ts` で検査する。
-- VS Code で `.sql` の import が解決できない場合は、拡張 **TypeScript 7**（`TypeScriptTeam.native-preview`）でワークスペースの TypeScript を使う。それでも駄目なら Node 24 で VS Code を起動し直す（`mise exec node@24.14.0 -- code .`）。
+- VS Code で `.sql` の import が解決できない場合は、拡張 **TypeScript 7**（`TypeScriptTeam.native-preview`）でワークスペースの TypeScript を使う。それでも駄目なら Node 26 で VS Code を起動し直す（`mise exec node@26.13.0 -- code .`）。
 
 ## 本番への配置
 
