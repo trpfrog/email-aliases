@@ -8,6 +8,9 @@ import { z } from "zod";
 export const settingsSchema = z.object({ drop_dry_run_since: z.string().nullable() });
 export type Settings = z.output<typeof settingsSchema>;
 
+export function isDropDryRun(settings: Settings): boolean {
+  return settings.drop_dry_run_since !== null;
+}
+
 export const getSettingsInput = z.strictObject({});
 export const setDropDryRunInput = z.strictObject({ enabled: z.boolean() });
-export type SetDropDryRunInput = z.output<typeof setDropDryRunInput>;

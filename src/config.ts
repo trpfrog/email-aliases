@@ -9,6 +9,11 @@ export const MAIL_DOMAIN = BUILD_MAIL_DOMAIN;
 declare const BUILD_APP_VERSION: string;
 
 export const APP_VERSION = BUILD_APP_VERSION;
+/**
+ * ドライラン中に、drop と判定したメールへ付けるヘッダー。値は本来の判定（disabled・unknown）。
+ * Email Routing は転送時に X- から始まるヘッダーだけを追加できる
+ */
+export const DRY_RUN_HEADER = "X-Email-Aliases-Dry-Run";
 export const ADMIN_USERNAME = "admin";
 export const MCP_PATH = "/mcp";
 export const AUTHORIZE_PATH = "/authorize";

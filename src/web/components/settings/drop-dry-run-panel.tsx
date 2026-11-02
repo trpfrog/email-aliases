@@ -1,4 +1,4 @@
-import { Group, Paper, Stack, Switch, Text } from "@mantine/core";
+import { Button, Group, Paper, Stack, Switch, Text } from "@mantine/core";
 import type { Settings } from "../../api/settings";
 import { formatDateTime } from "../../lib/received-display";
 import { ErrorAlert } from "../feedback/error-alert";
@@ -7,13 +7,18 @@ import { ErrorAlert } from "../feedback/error-alert";
 export function DropDryRunPanel({
   settings,
   error,
+  loading,
   busy,
   onChange,
+  onRetry,
 }: {
   settings: Settings | undefined;
   error: string;
+  loading: boolean;
   busy: boolean;
   onChange: (enabled: boolean) => void;
+  /** 設定を読み込めなかったときに再取得する。 */
+  onRetry: () => void;
 }) {
   const since = settings?.drop_dry_run_since ?? null;
   const enabled = since !== null;
@@ -46,6 +51,11 @@ export function DropDryRunPanel({
         />
       </Group>
       <ErrorAlert message={error} mt="sm" />
+      {settings === undefined && error !== "" && (
+        <Button variant="default" size="xs" mt="sm" onClick={onRetry} loading={loading}>
+          再読み込み
+        </Button>
+      )}
     </Paper>
   );
 }

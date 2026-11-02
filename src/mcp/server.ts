@@ -13,8 +13,7 @@ import {
   updateAliasDetailsInput,
   updateAliasResult,
 } from "../aliases/schema";
-import { APP_VERSION, MAIL_DOMAIN } from "../config";
-import { DRY_RUN_HEADER } from "../email/receive";
+import { APP_VERSION, DRY_RUN_HEADER, MAIL_DOMAIN } from "../config";
 import {
   clearReceivedEmailsInput,
   clearReceivedEmailsResult,

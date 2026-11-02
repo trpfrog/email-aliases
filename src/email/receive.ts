@@ -1,8 +1,9 @@
 import { addressSchema } from "../aliases/schema";
 import type { AliasStatus, AliasStore } from "../aliases/store";
-import { MAIL_DOMAIN } from "../config";
+import { DRY_RUN_HEADER, MAIL_DOMAIN } from "../config";
 import type { ReceivedOutcome } from "../received/schema";
 import type { ReceivedEmailStore } from "../received/store";
+import { isDropDryRun } from "../settings/schema";
 import type { SettingsStore } from "../settings/store";
 
 const OUTCOMES = {
@@ -10,12 +11,6 @@ const OUTCOMES = {
   disabled: "disabled",
   missing: "unknown",
 } as const satisfies Record<AliasStatus, ReceivedOutcome>;
-
-/**
- * ドライラン中に、drop と判定したメールへ付けるヘッダー。値は本来の判定（disabled・unknown）。
- * Email Routing は転送時に X- から始まるヘッダーだけを追加できる
- */
-export const DRY_RUN_HEADER = "X-Email-Aliases-Dry-Run";
 
 /**
  * 有効な登録済み宛先へのメールだけを固定の受信箱に転送し、受信履歴に記録する。
@@ -45,7 +40,8 @@ export async function receiveEmail(
 
   const outcome = OUTCOMES[await aliases.status(address.data)];
   // 設定の読み取りは drop と判定したメールだけにする
-  const dryRun = outcome !== "forwarded" && (await settings.get()).drop_dry_run_since !== null;
+  const dropped = outcome !== "forwarded";
+  const dryRun = dropped && isDropDryRun(await settings.get());
   const record = () =>
     received.record({
       recipient: address.data,
@@ -54,7 +50,7 @@ export async function receiveEmail(
       outcome,
       dry_run: dryRun,
     });
-  if (outcome !== "forwarded" && !dryRun) {
+  if (dropped && !dryRun) {
     await record();
     return;
   }

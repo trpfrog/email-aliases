@@ -1,9 +1,10 @@
-import { describe, expect, onTestFinished, vi } from "vite-plus/test";
+import { describe, expect, vi } from "vite-plus/test";
 import { createAliasStore } from "../aliases/store";
 import { createReceivedEmailStore } from "../received/store";
 import { address, dbTest, newAlias } from "../test/fixtures";
 import { createSettingsStore } from "../settings/store";
-import { DRY_RUN_HEADER, receiveEmail } from "./receive";
+import { DRY_RUN_HEADER } from "../config";
+import { receiveEmail } from "./receive";
 
 type Message = Parameters<typeof receiveEmail>[0];
 
@@ -11,6 +12,12 @@ const it = dbTest
   .extend("aliases", ({ db }) => createAliasStore(db))
   .extend("received", ({ db }) => createReceivedEmailStore(db))
   .extend("settings", ({ db }) => createSettingsStore(db))
+  // eslint-disable-next-line no-empty-pattern -- Vitest がフィクスチャーの依存関係を検出するには分割代入が必要
+  .extend("consoleError", ({}, { onCleanup }) => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    onCleanup(() => spy.mockRestore());
+    return spy;
+  })
   .extend("forward", () =>
     vi.fn<Message["forward"]>().mockResolvedValue({ messageId: "test-message" }),
   )
@@ -120,9 +127,8 @@ describe("メールの受信", () => {
     forward,
     receive,
     history,
+    consoleError,
   }) => {
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
-    onTestFinished(() => consoleError.mockRestore());
     await settings.setDropDryRun(true);
 
     forward.mockRejectedValueOnce(new Error("forward unavailable"));
@@ -165,9 +171,8 @@ describe("メールの受信", () => {
     aliases,
     forward,
     receive,
+    consoleError,
   }) => {
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
-    onTestFinished(() => consoleError.mockRestore());
     await aliases.create(newAlias({ address: "shop@mail.example.test" }));
     db.exec("DROP TABLE received_emails");
 

@@ -64,8 +64,10 @@ export function App() {
           <DropDryRunPanel
             settings={settings.settings}
             error={settings.error}
+            loading={settings.loading}
             busy={settings.busy}
             onChange={(enabled) => void notifyResult(settings.setDropDryRun(enabled))}
+            onRetry={settings.retry}
           />
           {/* 受信履歴はタブを開いたときだけ読み込む */}
           <Tabs defaultValue="aliases" keepMounted={false}>

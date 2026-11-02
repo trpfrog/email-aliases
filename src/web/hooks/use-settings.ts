@@ -7,26 +7,27 @@ import { settingsApi, type Settings } from "../api/settings";
  * 変更は成功時に通知用のメッセージを返し、失敗時は表示用のメッセージを持つ Error を投げる。
  */
 export function useSettings() {
-  const { data, error, isLoading, mutate } = useSWRImmutable<Settings, Error>(
+  const { data, error, isLoading, isValidating, mutate } = useSWRImmutable<Settings, Error>(
     "/api/settings",
     settingsApi.get,
     { shouldRetryOnError: false },
   );
-  const [pending, setPending] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
 
   return {
     settings: data,
     error: error?.message ?? "",
-    loading: isLoading,
-    busy: pending,
+    loading: isLoading || isValidating,
+    busy: pendingCount > 0,
+    retry: () => void mutate(),
 
     setDropDryRun: async (enabled: boolean) => {
-      setPending(true);
+      setPendingCount((count) => count + 1);
       try {
         await mutate(await settingsApi.setDropDryRun(enabled), { revalidate: false });
         return enabled ? "ドライランを始めました" : "ドライランを終了しました";
       } finally {
-        setPending(false);
+        setPendingCount((count) => count - 1);
       }
     },
   };
