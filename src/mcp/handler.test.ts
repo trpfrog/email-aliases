@@ -78,6 +78,25 @@ describe("MCP の HTTP ハンドラー", () => {
     expect(response.status).toBe(404);
   });
 
+  it("GET の SSE ストリームを開かず 405 にする", async ({ aliases, received }) => {
+    const response = await handleMcpRequest(
+      new Request(`${origin}/mcp`, {
+        method: "GET",
+        headers: { Accept: "text/event-stream" },
+      }),
+      {
+        aliases,
+        received,
+        auth: authFor([MANAGE_SCOPE]),
+        publicOrigin: origin,
+      },
+    );
+
+    expect(response.status).toBe(405);
+    expect(response.headers.get("Allow")).toBe("POST");
+    expect(response.headers.get("Content-Type")).not.toContain("text/event-stream");
+  });
+
   it.for([[], ["offline_access"]])(
     "管理スコープのないトークン %j をデータにアクセスする前に拒否する",
     async (scope, { aliases, request }) => {

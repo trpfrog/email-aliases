@@ -31,6 +31,15 @@ export async function handleMcpRequest(
   // OAuthProvider の requiredScopes は案内用で強制されないため、ここで権限を確認する
   if (!auth.scope.includes(MANAGE_SCOPE)) return insufficientScope(auth, [MANAGE_SCOPE]);
 
+  // ステートレスなので GET の SSE ストリームは応答後すぐに閉じてしまい、クライアントが約 1 秒ごとに
+  // 再接続し続ける。仕様どおり 405 を返して、サーバーからの通知を受けるストリームを開かせない
+  if (request.method === "GET") {
+    return Response.json(
+      { jsonrpc: "2.0", error: { code: -32000, message: "Method not allowed" }, id: null },
+      { status: 405, headers: { Allow: "POST" } },
+    );
+  }
+
   const origin = request.headers.get("Origin");
   if (origin !== null && origin !== publicOrigin) {
     return Response.json({ error: "Invalid origin" }, { status: 403 });
