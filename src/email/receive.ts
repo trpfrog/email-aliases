@@ -18,8 +18,9 @@ const OUTCOMES = {
  * ただし移行期間用のドライラン中は、破棄せずにヘッダーを付けて転送し、履歴に dry_run として残す。
  * 自ドメイン以外や形式が不正な宛先は、履歴にも残さない。
  * 設定・検索・転送の失敗は握りつぶさず、Worker の失敗として呼び出し元に伝える。
- * ただし転送先のメールサーバーが恒久的に拒否した（5xx）ときは、Worker の失敗にすると
+ * ただし転送先のメールサーバーがスパムなどとして内容を拒否した（5.7.x）ときは、Worker の失敗にすると
  * 一時的なエラーとして送信元が再送を繰り返すため、送信元に恒久的なエラーを返して履歴に理由を残す。
+ * 宛先不明（5.1.x）など転送先の設定の誤りによる拒否は、全メールを拒否して気付けなくならないよう Worker の失敗にする。
  * 転送した後の記録の失敗だけは、再送による二重の転送を避けるためログに残して成功として扱う。
  */
 export async function receiveEmail(
@@ -67,26 +68,35 @@ export async function receiveEmail(
       await message.forward(destination);
     }
   } catch (error) {
-    forwardRejection = permanentRejection(error);
+    forwardRejection = contentRejection(error);
     if (forwardRejection === undefined) throw error;
-    console.error("The forwarding destination permanently rejected an email", error);
+    console.error("The forwarding destination rejected an email for its content", error);
     // 転送先のアドレスを明かさないよう、拒否の理由は送信元に返さない
     message.setReject("Message rejected by the destination mail server");
   }
   try {
     await record(forwardRejection);
   } catch (error) {
-    console.error("Failed to record a forwarded email", error);
+    // 拒否したメールも、記録の失敗で再送されると転送先に何度も拒否されるため成功として扱う
+    console.error(
+      forwardRejection === undefined
+        ? "Failed to record a forwarded email"
+        : "Failed to record an email rejected by the forwarding destination",
+      error,
+    );
   }
 }
 
 /**
- * 転送先のメールサーバーが恒久的に拒否したときの理由を返す。それ以外のエラーなら undefined。
+ * 転送先のメールサーバーがセキュリティ・ポリシー上の理由（拡張ステータスコード 5.7.x）で
+ * 恒久的に拒否したときの理由を返す。それ以外のエラーなら undefined。
  * Cloudflare は種類を判別できるエラーを返さないため、SMTP の応答を含むメッセージから判定する
  */
-function permanentRejection(error: unknown): string | undefined {
+function contentRejection(error: unknown): string | undefined {
   if (!(error instanceof Error)) return undefined;
-  return /permanent error \(5\d\d\)/i.test(error.message) ? error.message : undefined;
+  return /\bpermanent error \(5\d\d\): 5\.7\.\d{1,3}\b/.test(error.message)
+    ? error.message
+    : undefined;
 }
 
 function parseForwardTo(forwardTo: string | undefined): string {

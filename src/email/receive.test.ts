@@ -167,7 +167,7 @@ describe("メールの受信", () => {
     expect(await history()).toEqual([]);
   });
 
-  it("転送先が恒久的に拒否したら、再送されないよう送信元に拒否を返して理由を履歴に残す", async ({
+  it("転送先が内容を理由に拒否したら、再送されないよう送信元に拒否を返して理由を履歴に残す", async ({
     aliases,
     received,
     settings,
@@ -178,16 +178,20 @@ describe("メールの受信", () => {
   }) => {
     await aliases.create(newAlias({ address: "shop@mail.example.test" }));
     await settings.setDropDryRun(true);
-    const reason = "Permanent Unknown error: permanent error (552): 5.7.0 This message was blocked";
+    // 転送先の応答が受信箱のアドレスを含んでも、送信元には返さない
+    const reason =
+      "Permanent Unknown error: permanent error (552): 5.7.0 <inbox@example.com> This message was blocked";
     forward.mockRejectedValue(new Error(reason));
 
     await receive("shop@mail.example.test");
     await receive("typo@mail.example.test");
 
     expect(setReject).toHaveBeenCalledTimes(2);
-    expect(setReject).toHaveBeenCalledWith(expect.not.stringContaining("inbox@example.com"));
+    for (const [rejection] of setReject.mock.calls) {
+      expect(rejection).not.toContain("inbox@example.com");
+    }
     expect(consoleError).toHaveBeenCalledWith(
-      "The forwarding destination permanently rejected an email",
+      "The forwarding destination rejected an email for its content",
       expect.any(Error),
     );
     const { emails } = await received.list({ filter: "all", limit: 100, offset: 0 });
@@ -205,10 +209,11 @@ describe("メールの受信", () => {
 
   it.for([
     "temporary error (451): 4.3.0 Try again later",
+    "permanent error (550): 5.1.1 The email account that you tried to reach does not exist",
     "forward unavailable",
     "destination address not verified",
   ])(
-    "恒久的な拒否でない転送のエラー %j は、送信元の再送に任せる",
+    "内容による拒否でない転送のエラー %j は、Worker の失敗として気付けるようにする",
     async (message, { aliases, forward, setReject, receive, history }) => {
       await aliases.create(newAlias({ address: "shop@mail.example.test" }));
       forward.mockRejectedValueOnce(new Error(message));
