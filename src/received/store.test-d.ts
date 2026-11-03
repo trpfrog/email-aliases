@@ -41,6 +41,7 @@ test("SQL の引数と戻り値が queries.ts の呼び出し方と一致する"
     size: number;
     outcome: string;
     dry_run: number;
+    forward_rejection: string;
     max_unknown_per_hour: number;
     max_new_unknown_per_hour: number;
   }>();

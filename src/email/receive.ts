@@ -18,10 +18,13 @@ const OUTCOMES = {
  * ただし移行期間用のドライラン中は、破棄せずにヘッダーを付けて転送し、履歴に dry_run として残す。
  * 自ドメイン以外や形式が不正な宛先は、履歴にも残さない。
  * 設定・検索・転送の失敗は握りつぶさず、Worker の失敗として呼び出し元に伝える。
+ * ただし転送先のメールサーバーがスパムなどとして内容を拒否した（5.7.x）ときは、Worker の失敗にすると
+ * 一時的なエラーとして送信元が再送を繰り返すため、送信元に恒久的なエラーを返して履歴に理由を残す。
+ * 宛先不明（5.1.x）など転送先の設定の誤りによる拒否は、全メールを拒否して気付けなくならないよう Worker の失敗にする。
  * 転送した後の記録の失敗だけは、再送による二重の転送を避けるためログに残して成功として扱う。
  */
 export async function receiveEmail(
-  message: Pick<ForwardableEmailMessage, "from" | "to" | "rawSize" | "forward">,
+  message: Pick<ForwardableEmailMessage, "from" | "to" | "rawSize" | "forward" | "setReject">,
   {
     aliases,
     received,
@@ -42,13 +45,14 @@ export async function receiveEmail(
   // 設定の読み取りは drop と判定したメールだけにする
   const dropped = outcome !== "forwarded";
   const dryRun = dropped && isDropDryRun(await settings.get());
-  const record = () =>
+  const record = (forwardRejection?: string) =>
     received.record({
       recipient: address.data,
       sender: message.from,
       size: message.rawSize,
       outcome,
       dry_run: dryRun,
+      forward_rejection: forwardRejection,
     });
   if (dropped && !dryRun) {
     await record();
@@ -56,16 +60,36 @@ export async function receiveEmail(
   }
 
   // 転送に失敗したメールを転送済みとして記録しないよう、転送の後に記録する
-  if (dryRun) {
-    await message.forward(destination, new Headers({ [DRY_RUN_HEADER]: outcome }));
-  } else {
-    await message.forward(destination);
+  let forwardRejection: string | undefined;
+  try {
+    if (dryRun) {
+      await message.forward(destination, new Headers({ [DRY_RUN_HEADER]: outcome }));
+    } else {
+      await message.forward(destination);
+    }
+  } catch (error) {
+    if (!isContentRejection(error)) throw error;
+    forwardRejection = error.message;
+    console.error("The forwarding destination rejected an email for its content", error);
+    // 転送先のアドレスを明かさないよう、拒否の理由は送信元に返さない
+    message.setReject("Message rejected by the destination mail server");
   }
   try {
-    await record();
+    await record(forwardRejection);
   } catch (error) {
-    console.error("Failed to record a forwarded email", error);
+    // 拒否したメールも、記録の失敗で再送されると転送先に何度も拒否されるため成功として扱う
+    console.error("Failed to record a received email", error);
   }
+}
+
+/**
+ * 転送先のメールサーバーがセキュリティ・ポリシー上の理由（拡張ステータスコード 5.7.x）で恒久的に拒否したか。
+ * Cloudflare は種類を判別できるエラーを返さないため、SMTP の応答を含むメッセージから判定する
+ */
+function isContentRejection(error: unknown): error is Error {
+  return (
+    error instanceof Error && /\bpermanent error \(5\d\d\): 5\.7\.\d{1,3}\b/.test(error.message)
+  );
 }
 
 function parseForwardTo(forwardTo: string | undefined): string {

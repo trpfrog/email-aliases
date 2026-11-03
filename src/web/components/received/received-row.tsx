@@ -48,6 +48,18 @@ export function ReceivedRow({
             ドライランで転送
           </Badge>
         )}
+        {email.forward_rejection !== null && (
+          <Badge
+            color="red"
+            variant="outline"
+            size="xs"
+            mt={4}
+            ml={4}
+            title={email.forward_rejection}
+          >
+            転送先が拒否
+          </Badge>
+        )}
         {email.outcome === "unknown" && registered && (
           <Badge color="teal" variant="outline" size="xs" mt={4} ml={4}>
             登録済み

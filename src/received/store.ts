@@ -29,6 +29,8 @@ export interface ReceivedEmailStore {
     outcome: ReceivedOutcome;
     /** drop と判定したが、ドライラン中だったため転送した。 */
     dry_run: boolean;
+    /** 転送先のメールサーバーが恒久的に拒否したときの理由。省略すると拒否されていないものとする。 */
+    forward_rejection?: string;
   }): Promise<boolean>;
   /** 新しい順に返す。 */
   list(input: ListReceivedEmailsInput): Promise<ListReceivedEmailsResult>;
@@ -41,10 +43,11 @@ export interface ReceivedEmailStore {
 
 export function createReceivedEmailStore(db: SqliteClient): ReceivedEmailStore {
   return {
-    async record({ sender, ...input }) {
+    async record({ sender, forward_rejection, ...input }) {
       return await insertReceivedEmail(db, {
         ...input,
         sender: sender.slice(0, RECEIVED_LIMITS.sender),
+        forward_rejection: forward_rejection?.slice(0, RECEIVED_LIMITS.forwardRejection),
       });
     },
 
