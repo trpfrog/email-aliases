@@ -7,12 +7,14 @@ WITH input AS (
     :size::int AS size,
     :outcome::text AS outcome,
     :dry_run::int AS dry_run,
+    -- 拒否されていなければ空文字で渡し、null として保存する
+    nullif(:forward_rejection::text, '') AS forward_rejection,
     :max_unknown_per_hour::int AS max_unknown,
     :max_new_unknown_per_hour::int AS max_new_unknown,
     strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 hour') AS since
 )
-INSERT INTO received_emails (recipient, sender, size, outcome, dry_run)
-SELECT recipient, sender, size, outcome, dry_run
+INSERT INTO received_emails (recipient, sender, size, outcome, dry_run, forward_rejection)
+SELECT recipient, sender, size, outcome, dry_run, forward_rejection
 FROM input
 WHERE input.outcome <> 'unknown'
   OR (

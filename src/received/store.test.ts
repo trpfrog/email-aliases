@@ -73,6 +73,26 @@ describe("受信履歴の store", () => {
     expect(emails[0]?.sender).toHaveLength(RECEIVED_LIMITS.sender);
   });
 
+  it("転送先が拒否した理由を上限の長さに切り詰めて記録し、拒否されていなければ null にする", async ({
+    store,
+    record,
+  }) => {
+    await record("a", "forwarded");
+    await store.record({
+      recipient: address("b@mail.example.test"),
+      sender: "sender@example.com",
+      size: 1,
+      outcome: "forwarded",
+      dry_run: false,
+      forward_rejection: "x".repeat(RECEIVED_LIMITS.forwardRejection + 10),
+    });
+    const { emails } = await store.list({ filter: "all", limit: 100, offset: 0 });
+    expect(emails.map((email) => email.forward_rejection?.length ?? null)).toEqual([
+      RECEIVED_LIMITS.forwardRejection,
+      null,
+    ]);
+  });
+
   it("個別に削除し、絞り込みに一致する行だけをまとめて削除する", async ({
     store,
     record,

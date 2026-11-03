@@ -1,5 +1,5 @@
 WITH input AS (SELECT :filter::text AS filter)
-SELECT id, received_at, recipient, sender, size, outcome, dry_run
+SELECT id, received_at, recipient, sender, size, outcome, dry_run, forward_rejection
 FROM received_emails
 WHERE (SELECT filter FROM input) = 'all'
   OR outcome = (SELECT filter FROM input)

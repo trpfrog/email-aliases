@@ -20,12 +20,14 @@ import recordQuery from "./queries/record.sql";
 // 明示した型と推論結果の一致は store.test-d.ts で検査する。
 // Reylo は SQLite の CHECK 制約から outcome の union を推論しないため、行は Zod で検証して返す。
 // dry_run は 0 か 1 の整数で保存しているため、真偽値に変換する。
+// forward_rejection は拒否されていなければ空文字で SQL に渡し、null として保存する。
 
 /** 記録したら true。未登録の宛先で、直近 1 時間の件数が上限に達していれば記録しない。 */
 export async function insertReceivedEmail(
   db: SqliteClient,
   {
     dry_run,
+    forward_rejection,
     ...row
   }: {
     recipient: AliasAddress;
@@ -33,11 +35,13 @@ export async function insertReceivedEmail(
     size: number;
     outcome: ReceivedOutcome;
     dry_run: boolean;
+    forward_rejection: string | null;
   },
 ): Promise<boolean> {
   const inserted = await recordQuery.run(db, {
     ...row,
     dry_run: dry_run ? 1 : 0,
+    forward_rejection: forward_rejection ?? "",
     max_unknown_per_hour: RECEIVED_LIMITS.unknownPerHour,
     max_new_unknown_per_hour: RECEIVED_LIMITS.newUnknownPerHour,
   });

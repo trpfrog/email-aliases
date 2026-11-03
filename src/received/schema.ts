@@ -13,6 +13,7 @@ export const RECEIVED_LIMITS = {
   unknownPerHour: 100,
   newUnknownPerHour: 10,
   sender: 320,
+  forwardRejection: 1000,
 } as const;
 
 /** DB に保存された受信履歴。Reylo が SQL から推論する行の型と一致することを型テストで保証する。 */
@@ -25,6 +26,8 @@ export const receivedEmailSchema = z.object({
   outcome: receivedOutcomeSchema,
   /** drop と判定したが、ドライラン中だったため転送した。 */
   dry_run: z.boolean(),
+  /** 転送先のメールサーバーが恒久的に拒否したときの理由。拒否されていなければ null。 */
+  forward_rejection: z.string().nullable(),
 });
 
 export type ReceivedEmail = z.output<typeof receivedEmailSchema>;

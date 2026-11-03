@@ -18,10 +18,12 @@ const OUTCOMES = {
  * ただし移行期間用のドライラン中は、破棄せずにヘッダーを付けて転送し、履歴に dry_run として残す。
  * 自ドメイン以外や形式が不正な宛先は、履歴にも残さない。
  * 設定・検索・転送の失敗は握りつぶさず、Worker の失敗として呼び出し元に伝える。
+ * ただし転送先のメールサーバーが恒久的に拒否した（5xx）ときは、Worker の失敗にすると
+ * 一時的なエラーとして送信元が再送を繰り返すため、送信元に恒久的なエラーを返して履歴に理由を残す。
  * 転送した後の記録の失敗だけは、再送による二重の転送を避けるためログに残して成功として扱う。
  */
 export async function receiveEmail(
-  message: Pick<ForwardableEmailMessage, "from" | "to" | "rawSize" | "forward">,
+  message: Pick<ForwardableEmailMessage, "from" | "to" | "rawSize" | "forward" | "setReject">,
   {
     aliases,
     received,
@@ -42,13 +44,14 @@ export async function receiveEmail(
   // 設定の読み取りは drop と判定したメールだけにする
   const dropped = outcome !== "forwarded";
   const dryRun = dropped && isDropDryRun(await settings.get());
-  const record = () =>
+  const record = (forwardRejection?: string) =>
     received.record({
       recipient: address.data,
       sender: message.from,
       size: message.rawSize,
       outcome,
       dry_run: dryRun,
+      forward_rejection: forwardRejection,
     });
   if (dropped && !dryRun) {
     await record();
@@ -56,16 +59,34 @@ export async function receiveEmail(
   }
 
   // 転送に失敗したメールを転送済みとして記録しないよう、転送の後に記録する
-  if (dryRun) {
-    await message.forward(destination, new Headers({ [DRY_RUN_HEADER]: outcome }));
-  } else {
-    await message.forward(destination);
+  let forwardRejection: string | undefined;
+  try {
+    if (dryRun) {
+      await message.forward(destination, new Headers({ [DRY_RUN_HEADER]: outcome }));
+    } else {
+      await message.forward(destination);
+    }
+  } catch (error) {
+    forwardRejection = permanentRejection(error);
+    if (forwardRejection === undefined) throw error;
+    console.error("The forwarding destination permanently rejected an email", error);
+    // 転送先のアドレスを明かさないよう、拒否の理由は送信元に返さない
+    message.setReject("Message rejected by the destination mail server");
   }
   try {
-    await record();
+    await record(forwardRejection);
   } catch (error) {
     console.error("Failed to record a forwarded email", error);
   }
+}
+
+/**
+ * 転送先のメールサーバーが恒久的に拒否したときの理由を返す。それ以外のエラーなら undefined。
+ * Cloudflare は種類を判別できるエラーを返さないため、SMTP の応答を含むメッセージから判定する
+ */
+function permanentRejection(error: unknown): string | undefined {
+  if (!(error instanceof Error)) return undefined;
+  return /permanent error \(5\d\d\)/i.test(error.message) ? error.message : undefined;
 }
 
 function parseForwardTo(forwardTo: string | undefined): string {

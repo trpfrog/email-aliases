@@ -21,12 +21,13 @@ const it = dbTest
   .extend("forward", () =>
     vi.fn<Message["forward"]>().mockResolvedValue({ messageId: "test-message" }),
   )
+  .extend("setReject", () => vi.fn<Message["setReject"]>())
   .extend(
     "receive",
-    ({ aliases, received, settings, forward }) =>
+    ({ aliases, received, settings, forward, setReject }) =>
       (to: string, { forwardTo }: { forwardTo?: string } = { forwardTo: "inbox@example.com" }) =>
         receiveEmail(
-          { from: "sender@example.com", to, rawSize: 1234, forward },
+          { from: "sender@example.com", to, rawSize: 1234, forward, setReject },
           { aliases, received, settings, forwardTo },
         ),
   )
@@ -165,6 +166,58 @@ describe("メールの受信", () => {
     await expect(receive("shop@mail.example.test")).rejects.toThrow("forward unavailable");
     expect(await history()).toEqual([]);
   });
+
+  it("転送先が恒久的に拒否したら、再送されないよう送信元に拒否を返して理由を履歴に残す", async ({
+    aliases,
+    received,
+    settings,
+    forward,
+    setReject,
+    receive,
+    consoleError,
+  }) => {
+    await aliases.create(newAlias({ address: "shop@mail.example.test" }));
+    await settings.setDropDryRun(true);
+    const reason = "Permanent Unknown error: permanent error (552): 5.7.0 This message was blocked";
+    forward.mockRejectedValue(new Error(reason));
+
+    await receive("shop@mail.example.test");
+    await receive("typo@mail.example.test");
+
+    expect(setReject).toHaveBeenCalledTimes(2);
+    expect(setReject).toHaveBeenCalledWith(expect.not.stringContaining("inbox@example.com"));
+    expect(consoleError).toHaveBeenCalledWith(
+      "The forwarding destination permanently rejected an email",
+      expect.any(Error),
+    );
+    const { emails } = await received.list({ filter: "all", limit: 100, offset: 0 });
+    expect(
+      emails.map(({ outcome, dry_run, forward_rejection }) => ({
+        outcome,
+        dry_run,
+        forward_rejection,
+      })),
+    ).toEqual([
+      { outcome: "unknown", dry_run: true, forward_rejection: reason },
+      { outcome: "forwarded", dry_run: false, forward_rejection: reason },
+    ]);
+  });
+
+  it.for([
+    "temporary error (451): 4.3.0 Try again later",
+    "forward unavailable",
+    "destination address not verified",
+  ])(
+    "恒久的な拒否でない転送のエラー %j は、送信元の再送に任せる",
+    async (message, { aliases, forward, setReject, receive, history }) => {
+      await aliases.create(newAlias({ address: "shop@mail.example.test" }));
+      forward.mockRejectedValueOnce(new Error(message));
+
+      await expect(receive("shop@mail.example.test")).rejects.toThrow(message);
+      expect(setReject).not.toHaveBeenCalled();
+      expect(await history()).toEqual([]);
+    },
+  );
 
   it("転送した後の記録の失敗は、再送で二重に転送されないよう成功として扱う", async ({
     db,
