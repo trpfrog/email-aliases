@@ -140,7 +140,7 @@ describe("メールの受信", () => {
     await receive("typo@mail.example.test");
     expect(forward).toHaveBeenCalledTimes(2);
     expect(consoleError).toHaveBeenCalledWith(
-      "Failed to record a forwarded email",
+      "Failed to record a received email",
       expect.any(Error),
     );
   });
@@ -237,7 +237,7 @@ describe("メールの受信", () => {
     await receive("shop@mail.example.test");
     expect(forward).toHaveBeenCalledExactlyOnceWith("inbox@example.com");
     expect(consoleError).toHaveBeenCalledWith(
-      "Failed to record a forwarded email",
+      "Failed to record a received email",
       expect.any(Error),
     );
   });

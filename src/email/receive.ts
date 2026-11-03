@@ -68,8 +68,8 @@ export async function receiveEmail(
       await message.forward(destination);
     }
   } catch (error) {
-    forwardRejection = contentRejection(error);
-    if (forwardRejection === undefined) throw error;
+    if (!isContentRejection(error)) throw error;
+    forwardRejection = error.message;
     console.error("The forwarding destination rejected an email for its content", error);
     // 転送先のアドレスを明かさないよう、拒否の理由は送信元に返さない
     message.setReject("Message rejected by the destination mail server");
@@ -78,25 +78,18 @@ export async function receiveEmail(
     await record(forwardRejection);
   } catch (error) {
     // 拒否したメールも、記録の失敗で再送されると転送先に何度も拒否されるため成功として扱う
-    console.error(
-      forwardRejection === undefined
-        ? "Failed to record a forwarded email"
-        : "Failed to record an email rejected by the forwarding destination",
-      error,
-    );
+    console.error("Failed to record a received email", error);
   }
 }
 
 /**
- * 転送先のメールサーバーがセキュリティ・ポリシー上の理由（拡張ステータスコード 5.7.x）で
- * 恒久的に拒否したときの理由を返す。それ以外のエラーなら undefined。
+ * 転送先のメールサーバーがセキュリティ・ポリシー上の理由（拡張ステータスコード 5.7.x）で恒久的に拒否したか。
  * Cloudflare は種類を判別できるエラーを返さないため、SMTP の応答を含むメッセージから判定する
  */
-function contentRejection(error: unknown): string | undefined {
-  if (!(error instanceof Error)) return undefined;
-  return /\bpermanent error \(5\d\d\): 5\.7\.\d{1,3}\b/.test(error.message)
-    ? error.message
-    : undefined;
+function isContentRejection(error: unknown): error is Error {
+  return (
+    error instanceof Error && /\bpermanent error \(5\d\d\): 5\.7\.\d{1,3}\b/.test(error.message)
+  );
 }
 
 function parseForwardTo(forwardTo: string | undefined): string {

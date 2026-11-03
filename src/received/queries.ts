@@ -35,7 +35,7 @@ export async function insertReceivedEmail(
     size: number;
     outcome: ReceivedOutcome;
     dry_run: boolean;
-    forward_rejection: string | null;
+    forward_rejection?: string | undefined;
   },
 ): Promise<boolean> {
   const inserted = await recordQuery.run(db, {

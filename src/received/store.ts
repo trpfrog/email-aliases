@@ -47,7 +47,7 @@ export function createReceivedEmailStore(db: SqliteClient): ReceivedEmailStore {
       return await insertReceivedEmail(db, {
         ...input,
         sender: sender.slice(0, RECEIVED_LIMITS.sender),
-        forward_rejection: forward_rejection?.slice(0, RECEIVED_LIMITS.forwardRejection) ?? null,
+        forward_rejection: forward_rejection?.slice(0, RECEIVED_LIMITS.forwardRejection),
       });
     },
 
