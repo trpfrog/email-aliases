@@ -18,11 +18,11 @@ importers:
         specifier: 0.4.1
         version: 0.4.1(@standard-schema/spec@1.1.0)(hono@4.13.16)
       '@mantine/core':
-        specifier: ^9.7.4
-        version: 9.7.4(@mantine/hooks@9.7.4(react@19.3.1))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        specifier: ^9.7.5
+        version: 9.7.5(@mantine/hooks@9.7.5(react@19.3.1))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@mantine/hooks':
-        specifier: ^9.7.4
-        version: 9.7.4(react@19.3.1)
+        specifier: ^9.7.5
+        version: 9.7.5(react@19.3.1)
       '@modelcontextprotocol/sdk':
         specifier: ^1.32.2
         version: 1.32.2(zod@4.6.7)
@@ -49,8 +49,8 @@ importers:
         specifier: 2.0.0-beta.v.6
         version: 2.0.0-beta.v.6(@types/node@26.6.6)(@voidzero-dev/vite-plus-core@1.4.0(@types/node@26.6.6)(typescript@7.1.0-beta))(workerd@1.20261023.1)
       '@cloudflare/workers-types':
-        specifier: ^5.20261029.1
-        version: 5.20261029.1
+        specifier: ^5.20261104.1
+        version: 5.20261104.1
       '@reylosql/sqlite':
         specifier: 0.6.0
         version: 0.6.0
@@ -159,8 +159,8 @@ packages:
   '@cloudflare/workers-oauth-provider@1.2.4':
     resolution: {integrity: sha512-ayo6Z8DBHdAxwDpplFU8BrEoxoSn6wNo+E7ypTENRHUOc8R89A8/+nZ+a8pMZjjXzF0JXfpYXhw/7qqG+DC18Q==}
 
-  '@cloudflare/workers-types@5.20261029.1':
-    resolution: {integrity: sha512-HwLwogkO/PnT4oXC8Y6wMQpgYbT3TEbWHytHV56F2tz9eLJBcgf4/VMjk5FYriAYHX6JOutS+tU6miuopKfCKw==}
+  '@cloudflare/workers-types@5.20261104.1':
+    resolution: {integrity: sha512-XSPcK88JXnW/oC82wuXvaP7vgyk2myydugbgOd/RcLKwqkwW0cP09Ozp9ItACa4IAZ7uKtMIfxZpUTXajYVd1Q==}
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -377,15 +377,15 @@ packages:
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
 
-  '@mantine/core@9.7.4':
-    resolution: {integrity: sha512-c7aTGELNn74CxG9i5/tq9BHGh0lKdKmGGz+9iDF+gR7Ipt4U1TMM286lAmLpRrKL2bR+UEaN4blZ8UJmOuGJ4Q==}
+  '@mantine/core@9.7.5':
+    resolution: {integrity: sha512-NiOTHpAZssi1Z5ISZBvcXEA4XDn0BWcxwpmmUthFx/eL0CsJ18FXMn/ydRCJmoeMGcIKmRE+pjt90KM70GOsUw==}
     peerDependencies:
-      '@mantine/hooks': 9.7.4
+      '@mantine/hooks': 9.7.5
       react: ^19.2.0
       react-dom: ^19.2.0
 
-  '@mantine/hooks@9.7.4':
-    resolution: {integrity: sha512-j6Xf9Sc1fhhGEKXg6BZA2geyP/Czqvo6Rsi0IduOCWgwl/MAAJbKRjRc7xe2+9vePLdfqLZqRIAOY5rta88uNA==}
+  '@mantine/hooks@9.7.5':
+    resolution: {integrity: sha512-+3cNisLOUkzF77SjRKkG/V+svZii9WDGvcwlaxFH58b14MNohz1zWbV+WfjZt9qfzrIPPUOedks/z6PMo5rAFA==}
     peerDependencies:
       react: ^19.2.0
 
@@ -1915,8 +1915,8 @@ packages:
     resolution: {integrity: sha512-sf4i37nQ2LBx4m3wB74y+ubopq6W/dIzXg0FDGjsYnZHVa1Da8FH853wlL2gtUhg+xJXjfk3kUZS3BRoQeoQBQ==}
     engines: {node: '>=6'}
 
-  tslib@2.8.1:
-    resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
+  tslib@2.9.1:
+    resolution: {integrity: sha512-a4Ux9VKuIMHsOS7ENbEq6hK2ZGYIT27Rtl0E4eD9KqwxhKiQeMZE/9xb3IdYwWaSOyIBQLExhQgXDTYoiCxnWA==}
 
   type-fest@5.10.0:
     resolution: {integrity: sha512-NoSdpq/WEiAg5sjmBkmV/hfxv6HJH4NqPNrqjtSO5CwRmpsDfaf4begxW34KdJykH/l1yHtwBWQkCRdoXO8mPA==}
@@ -2177,7 +2177,7 @@ snapshots:
 
   '@cloudflare/workers-oauth-provider@1.2.4': {}
 
-  '@cloudflare/workers-types@5.20261029.1': {}
+  '@cloudflare/workers-types@5.20261104.1': {}
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:
@@ -2185,7 +2185,7 @@ snapshots:
 
   '@emnapi/runtime@1.11.3':
     dependencies:
-      tslib: 2.8.1
+      tslib: 2.9.1
     optional: true
 
   '@floating-ui/core@1.8.0':
@@ -2342,10 +2342,10 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.6.0
 
-  '@mantine/core@9.7.4(@mantine/hooks@9.7.4(react@19.3.1))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@mantine/core@9.7.5(@mantine/hooks@9.7.5(react@19.3.1))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
       '@floating-ui/react': 0.27.20(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      '@mantine/hooks': 9.7.4(react@19.3.1)
+      '@mantine/hooks': 9.7.5(react@19.3.1)
       clsx: 2.1.1
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
@@ -2355,7 +2355,7 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
 
-  '@mantine/hooks@9.7.4(react@19.3.1)':
+  '@mantine/hooks@9.7.5(react@19.3.1)':
     dependencies:
       react: 19.3.1
 
@@ -3384,7 +3384,7 @@ snapshots:
     dependencies:
       react: 19.3.1
       react-style-singleton: 2.2.3(@types/react@19.3.0)(react@19.3.1)
-      tslib: 2.8.1
+      tslib: 2.9.1
     optionalDependencies:
       '@types/react': 19.3.0
 
@@ -3393,7 +3393,7 @@ snapshots:
       react: 19.3.1
       react-remove-scroll-bar: 2.3.8(@types/react@19.3.0)(react@19.3.1)
       react-style-singleton: 2.2.3(@types/react@19.3.0)(react@19.3.1)
-      tslib: 2.8.1
+      tslib: 2.9.1
       use-callback-ref: 1.3.3(@types/react@19.3.0)(react@19.3.1)
       use-sidecar: 1.1.3(@types/react@19.3.0)(react@19.3.1)
     optionalDependencies:
@@ -3403,7 +3403,7 @@ snapshots:
     dependencies:
       get-nonce: 1.0.1
       react: 19.3.1
-      tslib: 2.8.1
+      tslib: 2.9.1
     optionalDependencies:
       '@types/react': 19.3.0
 
@@ -3566,7 +3566,7 @@ snapshots:
 
   totalist@3.0.1: {}
 
-  tslib@2.8.1: {}
+  tslib@2.9.1: {}
 
   type-fest@5.10.0:
     dependencies:
@@ -3615,7 +3615,7 @@ snapshots:
   use-callback-ref@1.3.3(@types/react@19.3.0)(react@19.3.1):
     dependencies:
       react: 19.3.1
-      tslib: 2.8.1
+      tslib: 2.9.1
     optionalDependencies:
       '@types/react': 19.3.0
 
@@ -3623,7 +3623,7 @@ snapshots:
     dependencies:
       detect-node-es: 1.1.0
       react: 19.3.1
-      tslib: 2.8.1
+      tslib: 2.9.1
     optionalDependencies:
       '@types/react': 19.3.0
 
