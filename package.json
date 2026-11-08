@@ -5,8 +5,8 @@
   "dependencies": {
     "@cloudflare/workers-oauth-provider": "^1.2.4",
     "@hono/standard-validator": "0.4.1",
-    "@mantine/core": "^9.7.4",
-    "@mantine/hooks": "^9.7.4",
+    "@mantine/core": "^9.7.5",
+    "@mantine/hooks": "^9.7.5",
     "@modelcontextprotocol/sdk": "^1.32.2",
     "hono": "^4.13.16",
     "react": "^19.3.1",
@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "2.0.0-beta.v.6",
-    "@cloudflare/workers-types": "^5.20261029.1",
+    "@cloudflare/workers-types": "^5.20261104.1",
     "@reylosql/sqlite": "0.6.0",
     "@standard-schema/spec": "1.1.0",
     "@types/node": "^26.6.6",
