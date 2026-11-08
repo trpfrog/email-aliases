@@ -9,7 +9,7 @@ workflows:
         - 'pnpm/action-setup@v6.1.0'
     '.github/workflows/deploy.yml':
         - '1password/install-cli-action@v4.1.0'
-        - '1password/load-secrets-action@v5.0.1'
+        - '1password/load-secrets-action@5.0.1'
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-node@v7.1.0'
         - 'pnpm/action-setup@v6.1.0'
@@ -19,8 +19,8 @@ dependencies:
         commit: 'sha1-1a3160d5e9de1ae0803eaa08a88746f5ae3daa50'
         owner_id: 38230737
         repo_id: 644272408
-    '1password/load-secrets-action@v5.0.1':
-        ref: 'v5.0.1'
+    '1password/load-secrets-action@5.0.1':
+        ref: '5.0.1'
         commit: 'sha1-70062d7a876d3eb6334754fa26efd2fbd90c32f2'
         owner_id: 38230737
         repo_id: 368976838
