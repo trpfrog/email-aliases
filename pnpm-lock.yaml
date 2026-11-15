@@ -16,19 +16,19 @@ importers:
         version: 1.2.4
       '@hono/standard-validator':
         specifier: 0.4.1
-        version: 0.4.1(@standard-schema/spec@1.1.0)(hono@4.13.16)
+        version: 0.4.1(@standard-schema/spec@1.1.0)(hono@4.13.18)
       '@mantine/core':
-        specifier: ^9.7.4
-        version: 9.7.4(@mantine/hooks@9.7.4(react@19.3.1))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        specifier: ^9.8.0
+        version: 9.8.0(@mantine/hooks@9.8.0(react@19.3.1))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@mantine/hooks':
-        specifier: ^9.7.4
-        version: 9.7.4(react@19.3.1)
+        specifier: ^9.8.0
+        version: 9.8.0(react@19.3.1)
       '@modelcontextprotocol/sdk':
         specifier: ^1.32.2
         version: 1.32.2(zod@4.6.7)
       hono:
-        specifier: ^4.13.16
-        version: 4.13.16
+        specifier: ^4.13.18
+        version: 4.13.18
       react:
         specifier: ^19.3.1
         version: 19.3.1
@@ -36,8 +36,8 @@ importers:
         specifier: ^19.3.1
         version: 19.3.1(react@19.3.1)
       reylo:
-        specifier: 0.6.0
-        version: 0.6.0(@reylosql/sqlite@0.6.0)
+        specifier: 0.7.0
+        version: 0.7.0
       swr:
         specifier: ^2.5.1
         version: 2.5.1(react@19.3.1)
@@ -49,8 +49,8 @@ importers:
         specifier: 2.0.0-beta.v.6
         version: 2.0.0-beta.v.6(@types/node@26.6.6)(@voidzero-dev/vite-plus-core@1.4.0(@types/node@26.6.6)(typescript@7.1.0-beta))(workerd@1.20261023.1)
       '@cloudflare/workers-types':
-        specifier: ^5.20261029.1
-        version: 5.20261029.1
+        specifier: ^5.20261112.1
+        version: 5.20261112.1
       '@reylosql/sqlite':
         specifier: 0.6.0
         version: 0.6.0
@@ -159,8 +159,8 @@ packages:
   '@cloudflare/workers-oauth-provider@1.2.4':
     resolution: {integrity: sha512-ayo6Z8DBHdAxwDpplFU8BrEoxoSn6wNo+E7ypTENRHUOc8R89A8/+nZ+a8pMZjjXzF0JXfpYXhw/7qqG+DC18Q==}
 
-  '@cloudflare/workers-types@5.20261029.1':
-    resolution: {integrity: sha512-HwLwogkO/PnT4oXC8Y6wMQpgYbT3TEbWHytHV56F2tz9eLJBcgf4/VMjk5FYriAYHX6JOutS+tU6miuopKfCKw==}
+  '@cloudflare/workers-types@5.20261112.1':
+    resolution: {integrity: sha512-FhkAlCQ+J/pV89nhehVaarhlvZFz+ybUsePmIDN1yfI7PMmpjwdxV663e9qu+G+oQSw9oM8u5sVmheNBFn4tnw==}
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -377,15 +377,15 @@ packages:
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
 
-  '@mantine/core@9.7.4':
-    resolution: {integrity: sha512-c7aTGELNn74CxG9i5/tq9BHGh0lKdKmGGz+9iDF+gR7Ipt4U1TMM286lAmLpRrKL2bR+UEaN4blZ8UJmOuGJ4Q==}
+  '@mantine/core@9.8.0':
+    resolution: {integrity: sha512-+2Y+GBM6WvBJgBBb7hrfEvHbyljuRsOqC1GjxNpmX6NcD2SwmDXf9ZVFfquyXvi8fFerMrTpAwYdfb6k2PGAlQ==}
     peerDependencies:
-      '@mantine/hooks': 9.7.4
+      '@mantine/hooks': 9.8.0
       react: ^19.2.0
       react-dom: ^19.2.0
 
-  '@mantine/hooks@9.7.4':
-    resolution: {integrity: sha512-j6Xf9Sc1fhhGEKXg6BZA2geyP/Czqvo6Rsi0IduOCWgwl/MAAJbKRjRc7xe2+9vePLdfqLZqRIAOY5rta88uNA==}
+  '@mantine/hooks@9.8.0':
+    resolution: {integrity: sha512-fUA3PS8Ys2kih6VEuozgdEO0UyiGhryTJqx+Bf2lxee1XpXQ0XFXsQY7lNB4f+eBDzYCczYykQjIIuUzyJft7A==}
     peerDependencies:
       react: ^19.2.0
 
@@ -695,6 +695,50 @@ packages:
 
   '@poppinss/exception@1.2.3':
     resolution: {integrity: sha512-dCED+QRChTVatE9ibtoaxc+WkdzOSjYTKi/+uacHWIsfodVfpsueo3+DKpgU5Px8qXjgmXkSvhXvSCz3fnP9lw==}
+
+  '@reylosql/engine-darwin-arm64@0.7.0':
+    resolution: {integrity: sha512-Mjnzrd88NwpUCgPhinx2Dl3NcpDQ/O7n/5Vzpc+Z3SXQ+6UDuyu2pX5/Iy3EyIs7GcvbGH71EGRn05drY9iqGg==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@reylosql/engine-darwin-x64@0.7.0':
+    resolution: {integrity: sha512-KViE7mnDL/a9n/0OuwKoktk0Nfs9sr/8kXQBHrq9cNdoBSeeuJ/dMTcokqo4+epXvMd4Q/5ywfn0IAs9YB4rAA==}
+    cpu: [x64]
+    os: [darwin]
+
+  '@reylosql/engine-linux-arm64-musl@0.7.0':
+    resolution: {integrity: sha512-hgfGCZiK0sQJCj/ghjCqh1jYfNEv2PE7h5ajZkqnjZof0WrXE0uYhyz0HK9thL3jXC5Bc/B+wAUqqE93900rmA==}
+    cpu: [arm64]
+    os: [linux]
+    libc: [musl]
+
+  '@reylosql/engine-linux-arm64@0.7.0':
+    resolution: {integrity: sha512-fy37HBeaGeKffODQRo9ZGE6ZHW4xfSm3XIskYbbuuFVHYrr7loGiLQts1NrVoZR39mnr7nMCl7NSP85pE0toEw==}
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
+
+  '@reylosql/engine-linux-x64-musl@0.7.0':
+    resolution: {integrity: sha512-rTi5jo69dvvKX7KYz6mScVrB0T3nDdeQOEBsvsFUxjWGk7pon21Ii5ZxcYZZwnp7BrNpHHANMrElrS+PFGhnVA==}
+    cpu: [x64]
+    os: [linux]
+    libc: [musl]
+
+  '@reylosql/engine-linux-x64@0.7.0':
+    resolution: {integrity: sha512-blWEtAY/JAmHKNoDLlzjaLqfmBFQIv5jU7fe/YfzrFfmqZ0zq/Fp4Zzew6vrloxRcISrLTlHFbqBe/VrHr3+6A==}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
+  '@reylosql/engine-win32-arm64@0.7.0':
+    resolution: {integrity: sha512-MQTBJ0XDip1yYrbMztdaw15wvak8LxMCewBulB9xNnAV6jt9m8Io9ftwwkRlCmMG+J+8EfAJEZpmAWVz5h4NDA==}
+    cpu: [arm64]
+    os: [win32]
+
+  '@reylosql/engine-win32-x64@0.7.0':
+    resolution: {integrity: sha512-xwUlkMgHO/v0PrBLGb0RUrHXi0HroL4oge42nZxL1l6SMRJmlFNkqz6y6zHqjaWRug5A9mymhf9QtBlEZOjz1w==}
+    cpu: [x64]
+    os: [win32]
 
   '@reylosql/sqlite@0.6.0':
     resolution: {integrity: sha512-AKn4IdL9/PJmchJXRQmIZpXCuuLvNdSyLfSjBRXiMAO2h4BlZVJJR+Qvn7WtVqyOyHaxopsLUaiocj8VW1lnWg==}
@@ -1451,8 +1495,8 @@ packages:
     resolution: {integrity: sha512-T2UbfbBEF32wiepXIsMlTW9+dDYC6wMh/t/vYA4tuOMKqWz/n3vr1NFSxQiyP+zk2mXsoMA/i/7qV6LKut1t1A==}
     engines: {node: '>= 0.4'}
 
-  hono@4.13.16:
-    resolution: {integrity: sha512-AOLOEhvrV+iH92xXCnFr/5+3KjPKcI3xP63XJtX5spAnkznPdHijlIsUTpi7/9EhWqrTCekw5c5zh1K+YsVw7A==}
+  hono@4.13.18:
+    resolution: {integrity: sha512-H9q/E1XizaWstJxUW881dmLxEj+t/TrGGnyxINkm4+sK0qUwsMtFdo2BWI9Vs3cIS19MU6b6iCijoUoEf4f3DA==}
     engines: {node: '>=16.9.0'}
 
   http-errors@2.0.1:
@@ -1778,22 +1822,13 @@ packages:
     resolution: {integrity: sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw==}
     engines: {node: '>=0.10.0'}
 
-  reylo@0.6.0:
-    resolution: {integrity: sha512-Njt2l+11XWivq+wcfq0NMz5Y5tQoePmv3U5fD/wC95KjGPS1EY6UEx0/js5zhn+ayNiF4Q1Xelixx2iIbh5Ywg==}
+  reylo@0.7.0:
+    resolution: {integrity: sha512-h2w3l24KVs+VnKdw2fPeq5GvJirTKrtz5Vy0Ngt+JvHGQ+gwG7fEF/0vr7l5Hmw9PSIK3tL+FyPo0Kma7n41bg==}
     engines: {node: '>=24'}
     hasBin: true
     peerDependencies:
-      '@reylosql/mysql': 0.6.0
-      '@reylosql/postgres': 0.6.0
-      '@reylosql/sqlite': 0.6.0
       slonik: '>=49.12.0'
     peerDependenciesMeta:
-      '@reylosql/mysql':
-        optional: true
-      '@reylosql/postgres':
-        optional: true
-      '@reylosql/sqlite':
-        optional: true
       slonik:
         optional: true
 
@@ -1915,8 +1950,8 @@ packages:
     resolution: {integrity: sha512-sf4i37nQ2LBx4m3wB74y+ubopq6W/dIzXg0FDGjsYnZHVa1Da8FH853wlL2gtUhg+xJXjfk3kUZS3BRoQeoQBQ==}
     engines: {node: '>=6'}
 
-  tslib@2.8.1:
-    resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
+  tslib@2.9.1:
+    resolution: {integrity: sha512-a4Ux9VKuIMHsOS7ENbEq6hK2ZGYIT27Rtl0E4eD9KqwxhKiQeMZE/9xb3IdYwWaSOyIBQLExhQgXDTYoiCxnWA==}
 
   type-fest@5.10.0:
     resolution: {integrity: sha512-NoSdpq/WEiAg5sjmBkmV/hfxv6HJH4NqPNrqjtSO5CwRmpsDfaf4begxW34KdJykH/l1yHtwBWQkCRdoXO8mPA==}
@@ -2177,7 +2212,7 @@ snapshots:
 
   '@cloudflare/workers-oauth-provider@1.2.4': {}
 
-  '@cloudflare/workers-types@5.20261029.1': {}
+  '@cloudflare/workers-types@5.20261112.1': {}
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:
@@ -2185,7 +2220,7 @@ snapshots:
 
   '@emnapi/runtime@1.11.3':
     dependencies:
-      tslib: 2.8.1
+      tslib: 2.9.1
     optional: true
 
   '@floating-ui/core@1.8.0':
@@ -2213,14 +2248,14 @@ snapshots:
 
   '@floating-ui/utils@0.2.12': {}
 
-  '@hono/node-server@2.1.5(hono@4.13.16)':
+  '@hono/node-server@2.1.5(hono@4.13.18)':
     dependencies:
-      hono: 4.13.16
+      hono: 4.13.18
 
-  '@hono/standard-validator@0.4.1(@standard-schema/spec@1.1.0)(hono@4.13.16)':
+  '@hono/standard-validator@0.4.1(@standard-schema/spec@1.1.0)(hono@4.13.18)':
     dependencies:
       '@standard-schema/spec': 1.1.0
-      hono: 4.13.16
+      hono: 4.13.18
 
   '@img/colour@1.1.0': {}
 
@@ -2342,10 +2377,10 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.6.0
 
-  '@mantine/core@9.7.4(@mantine/hooks@9.7.4(react@19.3.1))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@mantine/core@9.8.0(@mantine/hooks@9.8.0(react@19.3.1))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
       '@floating-ui/react': 0.27.20(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      '@mantine/hooks': 9.7.4(react@19.3.1)
+      '@mantine/hooks': 9.8.0(react@19.3.1)
       clsx: 2.1.1
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
@@ -2355,13 +2390,13 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
 
-  '@mantine/hooks@9.7.4(react@19.3.1)':
+  '@mantine/hooks@9.8.0(react@19.3.1)':
     dependencies:
       react: 19.3.1
 
   '@modelcontextprotocol/sdk@1.32.2(zod@4.6.7)':
     dependencies:
-      '@hono/node-server': 2.1.5(hono@4.13.16)
+      '@hono/node-server': 2.1.5(hono@4.13.18)
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
       content-type: 1.0.5
@@ -2371,7 +2406,7 @@ snapshots:
       eventsource-parser: 3.1.1
       express: 5.3.0
       express-rate-limit: 8.7.1(express@5.3.0)
-      hono: 4.13.16
+      hono: 4.13.18
       jose: 6.2.14
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
@@ -2532,6 +2567,30 @@ snapshots:
       supports-color: 10.2.2
 
   '@poppinss/exception@1.2.3': {}
+
+  '@reylosql/engine-darwin-arm64@0.7.0':
+    optional: true
+
+  '@reylosql/engine-darwin-x64@0.7.0':
+    optional: true
+
+  '@reylosql/engine-linux-arm64-musl@0.7.0':
+    optional: true
+
+  '@reylosql/engine-linux-arm64@0.7.0':
+    optional: true
+
+  '@reylosql/engine-linux-x64-musl@0.7.0':
+    optional: true
+
+  '@reylosql/engine-linux-x64@0.7.0':
+    optional: true
+
+  '@reylosql/engine-win32-arm64@0.7.0':
+    optional: true
+
+  '@reylosql/engine-win32-x64@0.7.0':
+    optional: true
 
   '@reylosql/sqlite@0.6.0': {}
 
@@ -3112,7 +3171,7 @@ snapshots:
     dependencies:
       function-bind: 1.1.2
 
-  hono@4.13.16: {}
+  hono@4.13.18: {}
 
   http-errors@2.0.1:
     dependencies:
@@ -3384,7 +3443,7 @@ snapshots:
     dependencies:
       react: 19.3.1
       react-style-singleton: 2.2.3(@types/react@19.3.0)(react@19.3.1)
-      tslib: 2.8.1
+      tslib: 2.9.1
     optionalDependencies:
       '@types/react': 19.3.0
 
@@ -3393,7 +3452,7 @@ snapshots:
       react: 19.3.1
       react-remove-scroll-bar: 2.3.8(@types/react@19.3.0)(react@19.3.1)
       react-style-singleton: 2.2.3(@types/react@19.3.0)(react@19.3.1)
-      tslib: 2.8.1
+      tslib: 2.9.1
       use-callback-ref: 1.3.3(@types/react@19.3.0)(react@19.3.1)
       use-sidecar: 1.1.3(@types/react@19.3.0)(react@19.3.1)
     optionalDependencies:
@@ -3403,7 +3462,7 @@ snapshots:
     dependencies:
       get-nonce: 1.0.1
       react: 19.3.1
-      tslib: 2.8.1
+      tslib: 2.9.1
     optionalDependencies:
       '@types/react': 19.3.0
 
@@ -3411,9 +3470,16 @@ snapshots:
 
   require-from-string@2.0.2: {}
 
-  reylo@0.6.0(@reylosql/sqlite@0.6.0):
+  reylo@0.7.0:
     optionalDependencies:
-      '@reylosql/sqlite': 0.6.0
+      '@reylosql/engine-darwin-arm64': 0.7.0
+      '@reylosql/engine-darwin-x64': 0.7.0
+      '@reylosql/engine-linux-arm64': 0.7.0
+      '@reylosql/engine-linux-arm64-musl': 0.7.0
+      '@reylosql/engine-linux-x64': 0.7.0
+      '@reylosql/engine-linux-x64-musl': 0.7.0
+      '@reylosql/engine-win32-arm64': 0.7.0
+      '@reylosql/engine-win32-x64': 0.7.0
 
   router@2.2.0:
     dependencies:
@@ -3566,7 +3632,7 @@ snapshots:
 
   totalist@3.0.1: {}
 
-  tslib@2.8.1: {}
+  tslib@2.9.1: {}
 
   type-fest@5.10.0:
     dependencies:
@@ -3615,7 +3681,7 @@ snapshots:
   use-callback-ref@1.3.3(@types/react@19.3.0)(react@19.3.1):
     dependencies:
       react: 19.3.1
-      tslib: 2.8.1
+      tslib: 2.9.1
     optionalDependencies:
       '@types/react': 19.3.0
 
@@ -3623,7 +3689,7 @@ snapshots:
     dependencies:
       detect-node-es: 1.1.0
       react: 19.3.1
-      tslib: 2.8.1
+      tslib: 2.9.1
     optionalDependencies:
       '@types/react': 19.3.0
 
